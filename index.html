@@ -90,16 +90,20 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 .inline-edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media(max-width:700px){.inline-edit{grid-template-columns:1fr}}
 
+@page{size:A4 portrait;margin:0}
 @media print {
  body.staff-print header,body.staff-print footer,body.staff-print main>section:not(#staffPrintView){display:none!important}
- body.staff-print #staffPrintView{display:block!important;padding:12mm;color:#111;font:11pt Arial,sans-serif}
+ body.staff-print #staffPrintView{display:block!important;padding:0!important;margin:0!important;color:#111;font:8pt Arial,sans-serif}
  body.staff-print #staffPrintView .actions{display:none!important}
- .staff-paper{border:1.5px solid #333;padding:10mm;max-width:185mm;margin:0 auto;min-height:120mm}
- .staff-paper h2{text-align:center;font-size:15pt;margin:0 0 12mm}
- .staff-line{margin:7mm 0;border-bottom:1px dotted #333;min-height:7mm}
- .staff-two{display:grid;grid-template-columns:1fr 1fr;gap:10mm}
- .staff-table{width:100%;border-collapse:collapse;margin-top:7mm}
- .staff-table td,.staff-table th{border:1px solid #333;padding:6px;font-size:10pt}
+ .staff-print-stack{width:210mm;height:297mm;display:flex;flex-direction:column;overflow:hidden}
+ .staff-paper{box-sizing:border-box;border:1px solid #333;padding:5mm 7mm;width:210mm;height:148.5mm;max-height:148.5mm;margin:0;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+ .staff-paper h2{text-align:center;font-size:11pt;margin:0 0 4mm}
+ .staff-paper h2 small{font-size:8pt}
+ .staff-line{margin:2.3mm 0;border-bottom:1px dotted #333;min-height:4mm;font-size:8pt}
+ .staff-two{display:grid;grid-template-columns:1fr 1fr;gap:6mm;font-size:8pt}
+ .staff-table{width:100%;border-collapse:collapse;margin-top:3mm}
+ .staff-table td,.staff-table th{border:1px solid #333;padding:3px;font-size:8pt}
+ .staff-paper .staff-sign{margin-top:4mm}
 }
 </style>
 </head>
@@ -542,13 +546,13 @@ const staffTemplates={
   ["employee","Zamestnanec","text",true],["reason","Žiadam o náhradné voľno za","text",true],["from","Od","date",true],["to","Do","date",true],["days","Spolu dní","number",true],["place","Miesto pobytu na náhradnom voľne","text",false],["date","Dátum žiadosti","date",true],["employeeSign","Podpis zamestnanca (meno)","text",false]
  ]},
  weekend:{title:"Nariadená práca v sobotu – nedeľu",fields:[
-  ["employee","Zamestnanec","text",true],["day","Dňa","date",true],["performance","Výkon práce","text",true],["details","Opis / miesto výkonu práce","text",false],["from","Práca trvala od","time",true],["to","Do","time",true],["hours","Spolu hodín","number",false],["report","Správu o vykonanej práci prevzal/a","text",false],["reportDate","Dňa (prevzatie správy)","date",false]
+  ["employee","Zamestnanec","text",true],["dayType","Deň práce","select",true],["day","Dátum","date",true],["performance","Výkon práce","text",true],["details","Opis / miesto výkonu práce","text",false],["from","Práca trvala od","time",true],["to","Do","time",true],["hours","Spolu hodín","number",false],["report","Správu o vykonanej práci prevzal/a","text",false],["reportDate","Dňa (prevzatie správy)","date",false]
  ]}
 };
 function openStaffForm(type,id=null){
  activeStaffType=type;editingStaffId=id;const t=staffTemplates[type],record=id?staffRecords.find(x=>x.id===id):null;
  document.getElementById("staffFormTitle").textContent=t.title;
- document.getElementById("staffFormFields").innerHTML=t.fields.map(([key,label,input,required])=>`<div class="field ${["reason","place","performance","details"].includes(key)?"full":""}"><label for="sf_${key}">${label}${required?" *":""}</label><input id="sf_${key}" type="${input}" ${required?"required":""} value="${esc(record?.data?.[key]||"")}"></div>`).join("");
+ document.getElementById("staffFormFields").innerHTML=t.fields.map(([key,label,input,required])=>`<div class="field ${["reason","place","performance","details"].includes(key)?"full":""}"><label for="sf_${key}">${label}${required?" *":""}</label>${input==="select"?`<select id="sf_${key}" ${required?"required":""}><option value="">Vyberte deň</option><option value="Sobota" ${record?.data?.[key]==="Sobota"?"selected":""}>Sobota</option><option value="Nedeľa" ${record?.data?.[key]==="Nedeľa"?"selected":""}>Nedeľa</option></select>`:`<input id="sf_${key}" type="${input}" ${required?"required":""} value="${esc(record?.data?.[key]||"")}">`}</div>`).join("");
  showView("staffFormView");
 }
 document.getElementById("staffForm").addEventListener("submit",e=>{
@@ -566,7 +570,8 @@ function renderStaffPrint(item){
  if(item.type==="vacation")approval='<div class="staff-two"><div>Schválil/a: ____________________<br><br>Skutočný nástup dovolenky: __________<br>Nástup do zamestnania: __________</div><div>Dátum: __________<br>Vedúci útvaru: __________<br>Personálny útvar: __________</div></div>';
  if(item.type==="comp")approval='<div class="staff-two"><div>Schválil/a: ____________________<br>Skutočný nástup na NV: __________<br>Nástup do zamestnania: __________</div><div>Dátum: __________<br>Vedúci oddelenia: __________</div></div>';
  if(item.type==="weekend")approval='<div class="staff-line"><b>Výkon práce nariadila a schválila:</b><br>Vedúca oddelenia: __________________________</div>';
- document.getElementById("staffPrintContent").innerHTML=`<div class="staff-paper"><h2>${item.type==="vacation"?"DOVOLENKA":t.title}<br><small>Gemerské osvetové stredisko Rožňava</small></h2>${rows}${approval}<p style="margin-top:12mm;font-size:9pt">Vytvorené v portáli VEĽKÁ VEVERICA</p></div>`;
+ const paper=`<div class="staff-paper"><h2>${item.type==="vacation"?"DOVOLENKA":t.title}<br><small>Gemerské osvetové stredisko Rožňava</small></h2>${rows}${approval}<p style="margin-top:4mm;font-size:7pt">Gemerské osvetové stredisko Rožňava</p></div>`;
+ document.getElementById("staffPrintContent").innerHTML=`<div class="staff-print-stack">${paper}${paper}</div>`;
  document.body.classList.add("staff-print");showView("staffPrintView");
 }
 function showStaffRecords(type){
