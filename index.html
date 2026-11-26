@@ -89,9 +89,33 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 .data-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .inline-edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media(max-width:700px){.inline-edit{grid-template-columns:1fr}}
+
+@media print {
+ body.staff-print header,body.staff-print footer,body.staff-print main>section:not(#staffPrintView){display:none!important}
+ body.staff-print #staffPrintView{display:block!important;padding:12mm;color:#111;font:11pt Arial,sans-serif}
+ body.staff-print #staffPrintView .actions{display:none!important}
+ .staff-paper{border:1.5px solid #333;padding:10mm;max-width:185mm;margin:0 auto;min-height:120mm}
+ .staff-paper h2{text-align:center;font-size:15pt;margin:0 0 12mm}
+ .staff-line{margin:7mm 0;border-bottom:1px dotted #333;min-height:7mm}
+ .staff-two{display:grid;grid-template-columns:1fr 1fr;gap:10mm}
+ .staff-table{width:100%;border-collapse:collapse;margin-top:7mm}
+ .staff-table td,.staff-table th{border:1px solid #333;padding:6px;font-size:10pt}
+}
 </style>
 </head>
 <body>
+
+<div id="loginGate" style="position:fixed;inset:0;z-index:99999;background:#f4f6f8;display:flex;align-items:center;justify-content:center;padding:20px">
+ <div class="card" style="width:min(520px,100%);padding:28px">
+  <h1 style="margin-top:0">VEĽKÁ VEVERICA</h1><h2>Prihlásenie zamestnanca</h2>
+  <p>Vyberte svoje meno zo zoznamu zamestnancov.</p>
+  <label for="loginStaffSelect">Zamestnanec</label>
+  <select id="loginStaffSelect" style="width:100%;margin:8px 0 14px;padding:12px"><option value="">Vyberte svoje meno</option></select>
+  <button class="primary" style="width:100%" onclick="demoLogin()">Pokračovať</button>
+  <p style="font-size:12px;color:#666;margin-top:16px">Toto je testovací výber profilu. Nie je to bezpečné overenie identity heslom. Na ostrú prevádzku treba serverové účty a bezpečné prihlasovanie.</p>
+ </div>
+</div>
+
 <header>
  <div class="brand">🐿️ VEĽKÁ VEVERICA <small>Interný pracovný portál</small></div>
  <div class="right"><span id="roleLabel">Režim: Zamestnanec</span>
@@ -100,11 +124,14 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 </header>
 <main>
 <section id="homeView">
- <h1>Vitajte vo VEĽKEJ VEVERICI</h1><p class="sub">Jedno vstupné miesto pre interné systémy a služby.</p>
+ <h1>Vitajte vo VEĽKEJ VEVERICI</h1><p class="sub">Jedno vstupné miesto pre interné systémy a služby.</p><p id="activeStaffLabel" class="small"></p><button class="secondary" onclick="logoutStaff()">Odhlásiť sa</button>
  <div class="grid">
   <div class="card tile span-12"><div class="ico">🚗</div><div><h2>Auto – žiadanky na prepravu</h2><p>Elektronická žiadanka o vozidlo, schvaľovanie sekretariátom a tlač dvoch rovnakých kópií na jeden list A4.</p><div class="actions"><button class="primary" onclick="showView('requestView')">Vyplniť žiadanku</button><button class="secondary" onclick="showView('secretaryView')">Sekretariát – evidencia</button></div></div></div>
   <div class="card tile span-12"><div class="ico">🧾</div><div><h2>Objednávky – nákup tovaru a služieb</h2><p>Zamestnanci môžu vytvárať objednávky. Sekretariát má samostatný prehľad a evidenciu všetkých objednávok. Údaje GOS a vybraného dodávateľa sa predvyplnia.</p><div class="actions"><button class="primary" onclick="showView('orderView')">Vytvoriť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Sekretariát – objednávky</button><button class="secondary" onclick="showView('suppliersView')">Register dodávateľov</button></div></div></div>
  </div>
+  <div class="card tile span-12"><div class="ico">🌴</div><div><h2>Dovolenka</h2><p>Vyplňte žiadosť o dovolenku a vytlačte si tlačivo podľa papierového vzoru.</p><div class="actions"><button class="primary" onclick="openStaffForm('vacation')">Vyplniť žiadanku o dovolenku</button><button class="secondary" onclick="showStaffRecords('vacation')">Moje dovolenky</button></div></div></div>
+  <div class="card tile span-12"><div class="ico">🕒</div><div><h2>Náhradné voľno</h2><p>Vyplňte žiadosť o náhradné voľno a vytlačte si ju.</p><div class="actions"><button class="primary" onclick="openStaffForm('comp')">Vyplniť žiadosť o náhradné voľno</button><button class="secondary" onclick="showStaffRecords('comp')">Moje žiadosti</button></div></div></div>
+  <div class="card tile span-12"><div class="ico">📅</div><div><h2>Nariadená práca v sobotu – nedeľu</h2><p>Vyplňte záznam o nariadenej práci podľa papierového vzoru a vytlačte ho.</p><div class="actions"><button class="primary" onclick="openStaffForm('weekend')">Vyplniť záznam o práci</button><button class="secondary" onclick="showStaffRecords('weekend')">Moje záznamy</button></div></div></div>
 </section>
 
 <section id="requestView" class="hidden">
@@ -215,6 +242,16 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 </section>
 
 <section id="printArea" class="hidden"></section>
+
+<section id="staffFormView" class="hidden">
+ <div class="rowhead"><div><h1 id="staffFormTitle">Formulár</h1><p class="sub">Vyplňte údaje a formulár si môžete vytlačiť. Tieto formuláre sa neposielajú na schválenie sekretariátu.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
+ <form id="staffForm" class="card"><div id="staffFormFields" class="formgrid"></div>
+ <div class="actions"><button class="primary" type="submit">Uložiť a zobraziť tlač</button><button class="secondary" type="button" onclick="showView('homeView')">Zrušiť</button></div></form>
+</section>
+<section id="staffRecordsView" class="hidden">
+ <div class="rowhead"><div><h1 id="staffRecordsTitle">Moje záznamy</h1><p class="sub">Záznamy uložené v tomto prehliadači.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div><div class="card"><div id="staffRecordsList"></div></div>
+</section>
+<section id="staffPrintView" class="hidden"><div id="staffPrintContent"></div><div class="actions no-print"><button class="primary" onclick="window.print()">Tlačiť</button><button class="secondary" onclick="showView('homeView')">Späť na portál</button></div></section>
 </main>
 <footer>VEĽKÁ VEVERICA · Žiadanky sa ukladajú v prehliadači a sekretariát ich vie exportovať do zálohy.</footer>
 <script>
@@ -226,7 +263,7 @@ let requests=JSON.parse(localStorage.getItem("vv_requests")||"[]");
 let currentRole="employee";
 let editingRequestId=null;
 let editingOrderId=null;
-function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea","suppliersView"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();window.scrollTo(0,0)}
+function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea","suppliersView","staffFormView","staffRecordsView","staffPrintView"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();window.scrollTo(0,0)}
 document.getElementById("roleSwitch").addEventListener("change",e=>{currentRole=e.target.value;document.getElementById("roleLabel").textContent="Režim: "+(currentRole==="secretary"?"Sekretariát":"Zamestnanec");showView(currentRole==="secretary"?"secretaryView":"homeView")});
 document.getElementById("car").addEventListener("change",e=>{let v=vehicles[e.target.value];document.getElementById("ecv").value=v?.ecv||"";document.getElementById("orderNo").value=v?.order||""});
 function save(){
@@ -491,6 +528,99 @@ function exportSuppliers(){
  a.href=url;a.download="velka-veverica-register-dodavatelov.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 refreshSupplierOptions();
+
+
+// Zamestnanecké formuláre: dovolenka, náhradné voľno, práca v sobotu/nedeľu.
+let staffRecords=JSON.parse(localStorage.getItem("vv_staff_records")||"[]");
+let activeStaffType="",editingStaffId=null;
+const staffTemplates={
+ vacation:{title:"Žiadosť o dovolenku",fields:[
+  ["employee","Priezvisko a meno, titul","text",true],["department","Útvar","text",true],["personalNo","Osobné číslo","text",false],["unitNo","Číslo útvaru","text",false],
+  ["year","Žiadosť o dovolenku na zotavenie za kalendárny rok","number",true],["from","Od","date",true],["to","Do","date",true],["return","Vrátane / návrat","text",false],["days","Počet pracovných dní","number",true],["place","Miesto pobytu na dovolenke","text",false]
+ ]},
+ comp:{title:"Žiadosť o náhradné voľno",fields:[
+  ["employee","Zamestnanec","text",true],["reason","Žiadam o náhradné voľno za","text",true],["from","Od","date",true],["to","Do","date",true],["days","Spolu dní","number",true],["place","Miesto pobytu na náhradnom voľne","text",false],["date","Dátum žiadosti","date",true],["employeeSign","Podpis zamestnanca (meno)","text",false]
+ ]},
+ weekend:{title:"Nariadená práca v sobotu – nedeľu",fields:[
+  ["employee","Zamestnanec","text",true],["day","Dňa","date",true],["performance","Výkon práce","text",true],["details","Opis / miesto výkonu práce","text",false],["from","Práca trvala od","time",true],["to","Do","time",true],["hours","Spolu hodín","number",false],["report","Správu o vykonanej práci prevzal/a","text",false],["reportDate","Dňa (prevzatie správy)","date",false]
+ ]}
+};
+function openStaffForm(type,id=null){
+ activeStaffType=type;editingStaffId=id;const t=staffTemplates[type],record=id?staffRecords.find(x=>x.id===id):null;
+ document.getElementById("staffFormTitle").textContent=t.title;
+ document.getElementById("staffFormFields").innerHTML=t.fields.map(([key,label,input,required])=>`<div class="field ${["reason","place","performance","details"].includes(key)?"full":""}"><label for="sf_${key}">${label}${required?" *":""}</label><input id="sf_${key}" type="${input}" ${required?"required":""} value="${esc(record?.data?.[key]||"")}"></div>`).join("");
+ showView("staffFormView");
+}
+document.getElementById("staffForm").addEventListener("submit",e=>{
+ e.preventDefault();const t=staffTemplates[activeStaffType],data={};
+ t.fields.forEach(([key])=>data[key]=document.getElementById("sf_"+key).value);
+ const old=editingStaffId?staffRecords.find(x=>x.id===editingStaffId):null;
+ const item={id:old?.id||"SF-"+Date.now(),type:activeStaffType,title:t.title,data,created:old?.created||new Date().toISOString()};
+ if(old)staffRecords[staffRecords.findIndex(x=>x.id===old.id)]=item;else staffRecords.unshift(item);
+ localStorage.setItem("vv_staff_records",JSON.stringify(staffRecords));editingStaffId=null;renderStaffPrint(item);
+});
+function renderStaffPrint(item){
+ const d=item.data, t=staffTemplates[item.type];
+ let rows=t.fields.map(([key,label])=>`<div class="staff-line"><b>${label}:</b> ${esc(d[key]||"")}</div>`).join("");
+ let approval="";
+ if(item.type==="vacation")approval='<div class="staff-two"><div>Schválil/a: ____________________<br><br>Skutočný nástup dovolenky: __________<br>Nástup do zamestnania: __________</div><div>Dátum: __________<br>Vedúci útvaru: __________<br>Personálny útvar: __________</div></div>';
+ if(item.type==="comp")approval='<div class="staff-two"><div>Schválil/a: ____________________<br>Skutočný nástup na NV: __________<br>Nástup do zamestnania: __________</div><div>Dátum: __________<br>Vedúci oddelenia: __________</div></div>';
+ if(item.type==="weekend")approval='<div class="staff-line"><b>Výkon práce nariadila a schválila:</b><br>Vedúca oddelenia: __________________________</div>';
+ document.getElementById("staffPrintContent").innerHTML=`<div class="staff-paper"><h2>${item.type==="vacation"?"DOVOLENKA":t.title}<br><small>Gemerské osvetové stredisko Rožňava</small></h2>${rows}${approval}<p style="margin-top:12mm;font-size:9pt">Vytvorené v portáli VEĽKÁ VEVERICA</p></div>`;
+ document.body.classList.add("staff-print");showView("staffPrintView");
+}
+function showStaffRecords(type){
+ activeStaffType=type;const t=staffTemplates[type];document.getElementById("staffRecordsTitle").textContent=t.title+" – záznamy";
+ const list=staffRecords.filter(x=>x.type===type);const el=document.getElementById("staffRecordsList");
+ el.innerHTML=list.length?'<table><thead><tr><th>Zamestnanec</th><th>Dátum / obdobie</th><th>Akcie</th></tr></thead><tbody>'+list.map(x=>`<tr><td>${esc(x.data.employee||x.data.employeeSign||"")}</td><td>${esc(x.data.from||x.data.day||x.data.date||"")} ${x.data.to?" – "+esc(x.data.to):""}</td><td><button class="secondary" onclick="openStaffForm('${type}','${x.id}')">Upraviť</button> <button class="secondary" onclick="renderStaffPrint(staffRecords.find(y=>y.id==='${x.id}'))">Tlačiť</button> <button class="danger" onclick="deleteStaffRecord('${x.id}','${type}')">Vymazať</button></td></tr>`).join("")+'</tbody></table>':'<div class="empty">Zatiaľ nemáte uložené žiadne záznamy.</div>';
+ showView("staffRecordsView");
+}
+function deleteStaffRecord(id,type){if(!confirm("Naozaj vymazať tento záznam?"))return;staffRecords=staffRecords.filter(x=>x.id!==id);localStorage.setItem("vv_staff_records",JSON.stringify(staffRecords));showStaffRecords(type)}
+window.addEventListener("afterprint",()=>document.body.classList.remove("staff-print"));
+
+
+const gosStaffDirectory=[{"id": "gos01", "short": "Anežka Kleinová", "full": "Mgr. Anežka Kleinová", "department": "Riaditeľstvo", "role": "Riaditeľka / štatutárny orgán", "email": "anezka.kleinova@gos.sk", "phone": "0905 919 431", "access": "director"}, {"id": "gos02", "short": "Martina Huďová", "full": "Ing. Martina Huďová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Manažérka ekonomiky", "email": "martina.hudova@gos.sk", "phone": "0917 760 947", "access": "employee"}, {"id": "gos03", "short": "Michaela Poláková", "full": "Mgr. Michaela Poláková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Personalistika, vedenie sekretariátu, registratúra", "email": "michaela.polakova@gos.sk", "phone": "0915 778 740", "access": "secretary"}, {"id": "gos04", "short": "Viera Szőllősová", "full": "Viera Szőllősová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Referentka pokladne a správy majetku", "email": "viera.szollosova@gos.sk", "phone": "0917 760 947", "access": "employee"}, {"id": "gos05", "short": "Miroslava Malčeková", "full": "Miroslava Malčeková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Upratovačka", "email": "", "phone": "", "access": "employee"}, {"id": "gos06", "short": "Tibor Szabó", "full": "Tibor Szabó", "department": "Úsek astronomickej činnosti", "role": "Manažér kultúry", "email": "tibor.szabo@gos.sk", "phone": "0918 244 901", "access": "employee"}, {"id": "gos07", "short": "Voľná pozícia – astronómia", "full": "Voľná pozícia – manažér/ka kultúry", "department": "Úsek astronomickej činnosti", "role": "Voľná pozícia", "email": "", "phone": "", "access": "disabled"}, {"id": "gos08", "short": "Mária Hlaváčová", "full": "Mgr. Mária Hlaváčová", "department": "Oddelenie kultúrno-osvetovej činnosti", "role": "Zástupkyňa riaditeľky, vedúca oddelenia, manažérka kultúry", "email": "maria.hlavacova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos09", "short": "Sandra Petríková", "full": "Mgr. art. Sandra Petríková", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažérka kultúry pre neprofesionálne umenie", "email": "sandra.petrikova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos10", "short": "Martin Balog", "full": "Martin Balog", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažér kultúry pre neprofesionálne umenie", "email": "martin.balog@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos11", "short": "Peter Novotný", "full": "Peter Novotný", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažér pre Remeselnícky inkubátor RINK", "email": "peter.novotny@gos.sk", "phone": "0918 566 491", "access": "employee"}, {"id": "gos12", "short": "Viktória Rigó", "full": "Bc. Viktória Rigó", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka pre menšinovú kultúru", "email": "viktoria.rigo@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos13", "short": "Renáta Kseničová", "full": "Bc. Renáta Kseničová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry", "email": "renata.ksenicova@gos.sk", "phone": "0917 419 259", "access": "employee"}, {"id": "gos14", "short": "Silvia Makarová", "full": "Silvia Makarová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry – recepcia, lektorovanie, vzdelávanie a predaj", "email": "silvia.makarova@gos.sk", "phone": "0917 419 259", "access": "employee"}];
+let loggedInStaff=null;
+function initStaffLogin(){
+ const sel=document.getElementById("loginStaffSelect");
+ gosStaffDirectory.filter(x=>x.access!=="disabled").forEach(x=>{const o=document.createElement("option");o.value=x.id;o.textContent=x.full+" – "+x.department;sel.appendChild(o)});
+}
+function demoLogin(){
+ const id=document.getElementById("loginStaffSelect").value;
+ loggedInStaff=gosStaffDirectory.find(x=>x.id===id);
+ if(!loggedInStaff){alert("Vyberte svoje meno.");return}
+ document.getElementById("loginGate").style.display="none";
+ localStorage.setItem("vv_active_staff",loggedInStaff.id);
+ applyStaffProfile();
+}
+function applyStaffProfile(){
+ if(!loggedInStaff)return;
+ const set=(id,val)=>{const el=document.getElementById(id);if(el && (!el.value || id==="requester" || id==="requesterSign"))el.value=val||""};
+ set("requester",loggedInStaff.full);
+ set("requesterSign",loggedInStaff.full);
+ set("requesterName",loggedInStaff.full);
+ set("employeeName",loggedInStaff.full);
+ set("orderRequester",loggedInStaff.full);
+}
+function logoutStaff(){loggedInStaff=null;localStorage.removeItem("vv_active_staff");document.getElementById("loginGate").style.display="flex";document.getElementById("loginStaffSelect").value="";}
+function requireStaffProfile(){
+ if(!loggedInStaff){document.getElementById("loginGate").style.display="flex";return false}
+ return true;
+}
+const oldOpenStaffForm=window.openStaffForm;
+window.openStaffForm=function(type,id=null){
+ if(!requireStaffProfile())return;
+ oldOpenStaffForm(type,id);
+ const employeeInput=document.querySelector('#staffFormFields input[id="sf_employee"]');
+ if(employeeInput && !id)employeeInput.value=loggedInStaff.full;
+};
+const oldRequestShowView=window.showView;
+window.showView=function(id){
+ if(["requestView","orderView","staffFormView"].includes(id) && !requireStaffProfile())return;
+ oldRequestShowView(id);
+ if(id==="requestView" || id==="orderView")applyStaffProfile();
+};
+initStaffLogin();
 
 </script></body>
 </html>
