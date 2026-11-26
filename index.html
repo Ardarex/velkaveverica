@@ -161,7 +161,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 <section id="homeView">
  <h1>Vitajte vo VEĽKEJ VEVERICI</h1><p class="sub">Jedno vstupné miesto pre interné systémy a služby.</p><p id="activeStaffLabel" class="small"></p><button class="secondary" onclick="logoutStaff()">Odhlásiť sa</button>
  <div class="grid">
-  <div class="card tile span-12"><div class="ico">🚗</div><div><h2>Auto – žiadanky na prepravu</h2><p>Elektronická žiadanka o vozidlo, schvaľovanie sekretariátom a tlač dvoch rovnakých kópií na jeden list A4.</p><div class="actions"><button class="primary" onclick="showView('requestView')">Žiadanka o auto</button><button class="secondary" onclick="openTravelOrder()">Cestovný príkaz</button><button class="secondary" onclick="showTravelRecords()">Moje cestovné príkazy</button><button class="secondary" onclick="openServiceReport()">Správa zo služobnej cesty</button><button class="secondary" onclick="showServiceReports()">Moje správy</button><button class="secondary" onclick="showView('secretaryView')">Sekretariát – evidencia</button></div></div></div>
+  <div class="card tile span-12"><div class="ico">🚗</div><div><h2>Auto – žiadanky na prepravu</h2><p>Elektronická žiadanka o vozidlo, schvaľovanie sekretariátom a tlač dvoch rovnakých kópií na jeden list A4.</p><div class="actions"><button class="primary" onclick="showView('requestView')">Žiadanka o auto</button><button class="secondary" onclick="openTravelOrder()">Cestovný príkaz</button><button class="secondary" onclick="showTravelRecords()">Moje cestovné príkazy</button><button class="secondary" id="accountantTravelButton" style="display:none" onclick="showAccountantTravelRecords()">Účtovníčka – vyúčtovanie ciest</button><button class="secondary" onclick="openServiceReport()">Správa zo služobnej cesty</button><button class="secondary" onclick="showServiceReports()">Moje správy</button><button class="secondary" onclick="showView('secretaryView')">Sekretariát – evidencia</button></div></div></div>
   <div class="card tile span-12"><div class="ico">🧾</div><div><h2>Objednávky – nákup tovaru a služieb</h2><p>Zamestnanci môžu vytvárať objednávky. Sekretariát má samostatný prehľad a evidenciu všetkých objednávok. Údaje GOS a vybraného dodávateľa sa predvyplnia.</p><div class="actions"><button class="primary" onclick="showView('orderView')">Vytvoriť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Sekretariát – objednávky</button><button class="secondary" onclick="showView('suppliersView')">Register dodávateľov</button></div></div></div>
  </div>
   <div class="card tile span-12"><div class="ico">🧳</div><div><h2>Cestovný príkaz</h2><p>Vyplňte cestovný príkaz podľa obojstrannej papierovej predlohy. Môžete pridať viac miest a úsekov cesty.</p><div class="actions"><button class="primary" onclick="openTravelOrder()">Vyplniť cestovný príkaz</button><button class="secondary" onclick="showTravelRecords()">Moje cestovné príkazy</button></div></div></div>
@@ -301,6 +301,31 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 </section>
 <section id="serviceReportPrintView" class="hidden"><div id="serviceReportPrintContent"></div><div class="actions no-print"><button class="primary" onclick="window.print()">Tlačiť</button><button class="secondary" onclick="showView('homeView')">Späť</button></div></section>
 
+
+<section id="accountantTravelView" class="hidden">
+ <div class="rowhead"><div><h1>Vyúčtovanie pracovných ciest</h1><p class="sub">Táto evidencia je určená pre ekonomický úsek. Zamestnanci tu účtovné údaje nevypĺňajú.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
+ <div class="card"><div id="accountantTravelList"></div></div>
+</section>
+<section id="accountingEditView" class="hidden">
+ <div class="rowhead"><div><h1>Doplnenie vyúčtovania</h1><p class="sub" id="accountingTripInfo"></p></div><button class="secondary" onclick="showAccountantTravelRecords()">← Späť</button></div>
+ <form id="accountingForm" class="card">
+  <h3>Údaje vypĺňa účtovníčka</h3>
+  <div class="formgrid">
+   <div class="field"><label>Upravená náhrada (€)</label><input id="ac_adjusted" type="number" step="0.01"></div>
+   <div class="field"><label>Preddavok (€)</label><input id="ac_advance" type="number" step="0.01"></div>
+   <div class="field"><label>Doplatok (€)</label><input id="ac_balance_due" type="number" step="0.01"></div>
+   <div class="field"><label>Preplatok (€)</label><input id="ac_overpayment" type="number" step="0.01"></div>
+   <div class="field"><label>Účtovací predpis – Má dať</label><input id="ac_debit"></div>
+   <div class="field"><label>Účtovací predpis – Dal</label><input id="ac_credit"></div>
+   <div class="field"><label>Čiastka (€)</label><input id="ac_amount" type="number" step="0.01"></div>
+   <div class="field"><label>Stredisko</label><input id="ac_cost_center"></div>
+   <div class="field"><label>Zákazka</label><input id="ac_job"></div>
+   <div class="field full"><label>Poznámka účtovníčky</label><textarea id="ac_note" rows="2"></textarea></div>
+  </div>
+  <div class="actions"><button class="primary" type="submit">Uložiť vyúčtovanie</button></div>
+ </form>
+</section>
+
 <section id="travelFormView" class="hidden">
  <div class="rowhead"><div><h1>Cestovný príkaz</h1><p class="sub">Zamestnanec vyplní zakrúžkované údaje. Účtovné polia zostávajú prázdne pre účtovníčku.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
  <form id="travelForm" class="card">
@@ -354,7 +379,7 @@ let requests=JSON.parse(localStorage.getItem("vv_requests")||"[]");
 let currentRole="employee";
 let editingRequestId=null;
 let editingOrderId=null;
-function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea","suppliersView","staffFormView","staffRecordsView","staffPrintView","travelFormView","travelRecordsView","travelPrintView","serviceReportFormView","serviceReportRecordsView","serviceReportPrintView"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();window.scrollTo(0,0)}
+function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea","suppliersView","staffFormView","staffRecordsView","staffPrintView","travelFormView","travelRecordsView","travelPrintView","accountantTravelView","accountingEditView","serviceReportFormView","serviceReportRecordsView","serviceReportPrintView"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();window.scrollTo(0,0)}
 document.getElementById("roleSwitch").addEventListener("change",e=>{currentRole=e.target.value;document.getElementById("roleLabel").textContent="Režim: "+(currentRole==="secretary"?"Sekretariát":"Zamestnanec");showView(currentRole==="secretary"?"secretaryView":"homeView")});
 document.getElementById("car").addEventListener("change",e=>{let v=vehicles[e.target.value];document.getElementById("ecv").value=v?.ecv||"";document.getElementById("orderNo").value=v?.order||""});
 function save(){
@@ -672,7 +697,7 @@ function deleteStaffRecord(id,type){if(!confirm("Naozaj vymazať tento záznam?"
 window.addEventListener("afterprint",()=>document.body.classList.remove("staff-print"));
 
 
-const gosStaffDirectory=[{"id": "gos01", "short": "Anežka Kleinová", "full": "Mgr. Anežka Kleinová", "department": "Riaditeľstvo", "role": "Riaditeľka / štatutárny orgán", "email": "anezka.kleinova@gos.sk", "phone": "0905 919 431", "access": "director"}, {"id": "gos02", "short": "Martina Huďová", "full": "Ing. Martina Huďová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Manažérka ekonomiky", "email": "martina.hudova@gos.sk", "phone": "0917 760 947", "access": "employee"}, {"id": "gos03", "short": "Michaela Poláková", "full": "Mgr. Michaela Poláková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Personalistika, vedenie sekretariátu, registratúra", "email": "michaela.polakova@gos.sk", "phone": "0915 778 740", "access": "secretary"}, {"id": "gos04", "short": "Viera Szőllősová", "full": "Viera Szőllősová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Referentka pokladne a správy majetku", "email": "viera.szollosova@gos.sk", "phone": "0917 760 947", "access": "employee"}, {"id": "gos05", "short": "Miroslava Malčeková", "full": "Miroslava Malčeková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Upratovačka", "email": "", "phone": "", "access": "employee"}, {"id": "gos06", "short": "Tibor Szabó", "full": "Tibor Szabó", "department": "Úsek astronomickej činnosti", "role": "Manažér kultúry", "email": "tibor.szabo@gos.sk", "phone": "0918 244 901", "access": "employee"}, {"id": "gos07", "short": "Voľná pozícia – astronómia", "full": "Voľná pozícia – manažér/ka kultúry", "department": "Úsek astronomickej činnosti", "role": "Voľná pozícia", "email": "", "phone": "", "access": "disabled"}, {"id": "gos08", "short": "Mária Hlaváčová", "full": "Mgr. Mária Hlaváčová", "department": "Oddelenie kultúrno-osvetovej činnosti", "role": "Zástupkyňa riaditeľky, vedúca oddelenia, manažérka kultúry", "email": "maria.hlavacova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos09", "short": "Sandra Petríková", "full": "Mgr. art. Sandra Petríková", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažérka kultúry pre neprofesionálne umenie", "email": "sandra.petrikova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos10", "short": "Martin Balog", "full": "Martin Balog", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažér kultúry pre neprofesionálne umenie", "email": "martin.balog@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos11", "short": "Peter Novotný", "full": "Peter Novotný", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažér pre Remeselnícky inkubátor RINK", "email": "peter.novotny@gos.sk", "phone": "0918 566 491", "access": "employee"}, {"id": "gos12", "short": "Viktória Rigó", "full": "Bc. Viktória Rigó", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka pre menšinovú kultúru", "email": "viktoria.rigo@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos13", "short": "Renáta Kseničová", "full": "Bc. Renáta Kseničová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry", "email": "renata.ksenicova@gos.sk", "phone": "0917 419 259", "access": "employee"}, {"id": "gos14", "short": "Silvia Makarová", "full": "Silvia Makarová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry – recepcia, lektorovanie, vzdelávanie a predaj", "email": "silvia.makarova@gos.sk", "phone": "0917 419 259", "access": "employee"}];
+const gosStaffDirectory=[{"id": "gos01", "short": "Anežka Kleinová", "full": "Mgr. Anežka Kleinová", "department": "Riaditeľstvo", "role": "Riaditeľka / štatutárny orgán", "email": "anezka.kleinova@gos.sk", "phone": "0905 919 431", "access": "director"}, {"id": "gos02", "short": "Martina Huďová", "full": "Ing. Martina Huďová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Manažérka ekonomiky", "email": "martina.hudova@gos.sk", "phone": "0917 760 947", "access": "accountant"}, {"id": "gos03", "short": "Michaela Poláková", "full": "Mgr. Michaela Poláková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Personalistika, vedenie sekretariátu, registratúra", "email": "michaela.polakova@gos.sk", "phone": "0915 778 740", "access": "secretary"}, {"id": "gos04", "short": "Viera Szőllősová", "full": "Viera Szőllősová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Referentka pokladne a správy majetku", "email": "viera.szollosova@gos.sk", "phone": "0917 760 947", "access": "employee"}, {"id": "gos05", "short": "Miroslava Malčeková", "full": "Miroslava Malčeková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Upratovačka", "email": "", "phone": "", "access": "employee"}, {"id": "gos06", "short": "Tibor Szabó", "full": "Tibor Szabó", "department": "Úsek astronomickej činnosti", "role": "Manažér kultúry", "email": "tibor.szabo@gos.sk", "phone": "0918 244 901", "access": "employee"}, {"id": "gos07", "short": "Voľná pozícia – astronómia", "full": "Voľná pozícia – manažér/ka kultúry", "department": "Úsek astronomickej činnosti", "role": "Voľná pozícia", "email": "", "phone": "", "access": "disabled"}, {"id": "gos08", "short": "Mária Hlaváčová", "full": "Mgr. Mária Hlaváčová", "department": "Oddelenie kultúrno-osvetovej činnosti", "role": "Zástupkyňa riaditeľky, vedúca oddelenia, manažérka kultúry", "email": "maria.hlavacova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos09", "short": "Sandra Petríková", "full": "Mgr. art. Sandra Petríková", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažérka kultúry pre neprofesionálne umenie", "email": "sandra.petrikova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos10", "short": "Martin Balog", "full": "Martin Balog", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažér kultúry pre neprofesionálne umenie", "email": "martin.balog@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos11", "short": "Peter Novotný", "full": "Peter Novotný", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažér pre Remeselnícky inkubátor RINK", "email": "peter.novotny@gos.sk", "phone": "0918 566 491", "access": "employee"}, {"id": "gos12", "short": "Viktória Rigó", "full": "Bc. Viktória Rigó", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka pre menšinovú kultúru", "email": "viktoria.rigo@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos13", "short": "Renáta Kseničová", "full": "Bc. Renáta Kseničová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry", "email": "renata.ksenicova@gos.sk", "phone": "0917 419 259", "access": "employee"}, {"id": "gos14", "short": "Silvia Makarová", "full": "Silvia Makarová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry – recepcia, lektorovanie, vzdelávanie a predaj", "email": "silvia.makarova@gos.sk", "phone": "0917 419 259", "access": "employee"}];
 let loggedInStaff=null;
 function initStaffLogin(){
  const sel=document.getElementById("loginStaffSelect");
@@ -686,6 +711,8 @@ function demoLogin(){
  document.getElementById("loginGate").style.display="none";
  localStorage.setItem("vv_active_staff",loggedInStaff.id);
  applyStaffProfile();
+ const accountantButton=document.getElementById("accountantTravelButton");
+ if(accountantButton)accountantButton.style.display=loggedInStaff.access==="accountant"?"inline-flex":"none";
  if(typeof updateVacationBalance==="function")updateVacationBalance();
 }
 function applyStaffProfile(){
@@ -750,47 +777,79 @@ function addTravelLeg(data={}){
  div.innerHTML=`<div class="rowhead"><b>Úsek ${n}</b><button type="button" class="danger" onclick="this.closest('.travel-leg').remove();renumberTravelLegs()">Odstrániť úsek</button></div><div class="formgrid">
  <div class="field"><label>Začiatok cesty – miesto</label><input class="leg-start" value="${esc(data.start||"")}"></div>
  <div class="field"><label>Dátum a čas odchodu</label><input class="leg-depart" type="datetime-local" value="${esc(data.depart||"")}"></div>
- <div class="field"><label>Miesto výkonu práce / destinácia</label><input class="leg-destination" value="${esc(data.destination||"")}"></div>
+ <div class="field full"><label>Miesto výkonu práce / destinácie</label><div class="leg-destinations"></div><button type="button" class="secondary" onclick="addLegDestination(this)">+ Pridať ďalšiu destináciu</button></div>
  <div class="field"><label>Účel cesty</label><input class="leg-purpose" value="${esc(data.purpose||"")}"></div>
  <div class="field"><label>Koniec cesty – miesto</label><input class="leg-end" value="${esc(data.end||"")}"></div>
  <div class="field"><label>Dátum a čas príchodu</label><input class="leg-arrive" type="datetime-local" value="${esc(data.arrive||"")}"></div>
  </div>`;
- document.getElementById("travelLegs").appendChild(div);renumberTravelLegs();
+ document.getElementById("travelLegs").appendChild(div);
+ const destinations=(data.destinations&&data.destinations.length)?data.destinations:(data.destination?[data.destination]:[""]);
+ destinations.forEach(v=>addLegDestination(div.querySelector(".leg-destinations"),v));
+ renumberTravelLegs();
+}
+function addLegDestination(target,value=""){
+ const host=target?.classList?.contains("leg-destinations")?target:target?.closest(".field")?.querySelector(".leg-destinations");
+ if(!host)return;
+ const row=document.createElement("div");row.className="leg-destination-row";row.style.display="flex";row.style.gap="6px";row.style.margin="4px 0";
+ row.innerHTML=`<input class="leg-destination" placeholder="Zadajte miesto výkonu práce" value="${esc(value)}"><button type="button" class="danger" onclick="this.parentElement.remove()">Odstrániť</button>`;
+ host.appendChild(row);
 }
 function renumberTravelLegs(){document.querySelectorAll(".travel-leg").forEach((x,i)=>x.querySelector("b").textContent="Úsek "+(i+1))}
-function travelLegData(){return [...document.querySelectorAll(".travel-leg")].map(x=>({start:x.querySelector(".leg-start").value,depart:x.querySelector(".leg-depart").value,destination:x.querySelector(".leg-destination").value,purpose:x.querySelector(".leg-purpose").value,end:x.querySelector(".leg-end").value,arrive:x.querySelector(".leg-arrive").value}))}
-function hoursBetween(a,b){if(!a||!b)return 0;let h=(new Date(b)-new Date(a))/3600000;if(h<0)h+=24;return Math.max(0,h)}
+function travelLegData(){return [...document.querySelectorAll(".travel-leg")].map(x=>({start:x.querySelector(".leg-start").value,depart:x.querySelector(".leg-depart").value,destinations:[...x.querySelectorAll(".leg-destination")].map(v=>v.value).filter(Boolean),destination:[...x.querySelectorAll(".leg-destination")].map(v=>v.value).filter(Boolean).join(", "),purpose:x.querySelector(".leg-purpose").value,end:x.querySelector(".leg-end").value,arrive:x.querySelector(".leg-arrive").value}))}
+function hoursBetween(a,b){if(!a||!b)return 0;return Math.max(0,(new Date(b)-new Date(a))/3600000)}
 function mealRate(h){return h>=5&&h<=12?9.30:h>12&&h<=18?13.80:h>18?20.60:0}
+function calculateDailyAllowances(depart,arrive){
+ if(!depart||!arrive)return {totalHours:0,total:0,days:[]};
+ const start=new Date(depart),end=new Date(arrive);
+ if(Number.isNaN(start.getTime())||Number.isNaN(end.getTime())||end<start)return {totalHours:0,total:0,days:[]};
+ const same=start.toDateString()===end.toDateString();
+ const totalHours=(end-start)/3600000;
+ if(same){const amount=mealRate(totalHours);return {totalHours,total:amount,days:[{date:depart.slice(0,10),hours:totalHours,amount}]}};
+ const firstMidnight=new Date(start);firstMidnight.setHours(24,0,0,0);
+ const firstHours=(firstMidnight-start)/3600000;
+ const days=[{date:depart.slice(0,10),hours:firstHours,amount:mealRate(firstHours)}];
+ let cursor=new Date(firstMidnight);
+ while(cursor.toDateString()!==end.toDateString()){
+  days.push({date:cursor.getFullYear()+"-"+String(cursor.getMonth()+1).padStart(2,"0")+"-"+String(cursor.getDate()).padStart(2,"0"),hours:24,amount:20.60});
+  cursor.setDate(cursor.getDate()+1);
+ }
+ const lastDate=arrive.slice(0,10);
+ if(days[days.length-1].date!==lastDate)days.push({date:lastDate,hours:(end-new Date(end.getFullYear(),end.getMonth(),end.getDate()))/3600000,amount:20.60});
+ return {totalHours,total:days.reduce((a,x)=>a+x.amount,0),days};
+}
 function money(n){return Number(n||0).toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})}
 document.getElementById("travelForm").addEventListener("submit",e=>{
  e.preventDefault();
  const legs=travelLegData();if(!legs.length){alert("Pridajte aspoň jeden úsek cesty.");return}
  const firstDeparture=legs.find(l=>l.depart)?.depart;
  const lastArrival=[...legs].reverse().find(l=>l.arrive)?.arrive;
- const totalHours=hoursBetween(firstDeparture,lastArrival);
- const allowance=mealRate(totalHours);
- const d={employee:loggedInStaff.full,personal:document.getElementById("tr_personal").value,address:document.getElementById("tr_address").value,department:document.getElementById("tr_department").value,phone:document.getElementById("tr_phone").value,workFrom:document.getElementById("tr_work_from").value,workTo:document.getElementById("tr_work_to").value,legs,companions:document.getElementById("tr_companions").value,vehicle:document.getElementById("tr_vehicle").value,estimated:document.getElementById("tr_estimated").value,advance:document.getElementById("tr_advance").value,advance_date:document.getElementById("tr_advance_date").value,receipt:document.getElementById("tr_receipt").value,totalHours,allowance};
+ const dailyAllowance=calculateDailyAllowances(firstDeparture,lastArrival);
+ const totalHours=dailyAllowance.totalHours;
+ const allowance=dailyAllowance.total;
+ const d={employee:loggedInStaff.full,personal:document.getElementById("tr_personal").value,address:document.getElementById("tr_address").value,department:document.getElementById("tr_department").value,phone:document.getElementById("tr_phone").value,workFrom:document.getElementById("tr_work_from").value,workTo:document.getElementById("tr_work_to").value,legs,companions:document.getElementById("tr_companions").value,vehicle:document.getElementById("tr_vehicle").value,estimated:document.getElementById("tr_estimated").value,advance:document.getElementById("tr_advance").value,advance_date:document.getElementById("tr_advance_date").value,receipt:document.getElementById("tr_receipt").value,totalHours,allowance,dailyAllowance:dailyAllowance.days};
  const old=travelEditingId?travelRecords.find(x=>x.id===travelEditingId):null;
  const item={id:old?.id||"CP-"+Date.now(),employeeId:loggedInStaff.id,data:d,created:old?.created||new Date().toISOString()};
  if(old)travelRecords[travelRecords.findIndex(x=>x.id===old.id)]=item;else travelRecords.unshift(item);
  localStorage.setItem("vv_travel_records",JSON.stringify(travelRecords));travelEditingId=null;renderTravelPrint(item);
 });
+function dailyAllowanceRows(rows){return rows}
 function renderTravelPrint(item){
  const d=item.data,legs=d.legs||[];
- const frontRows=legs.map((l,i)=>`<tr><td>${i+1}. ${esc(l.start)}<br>${esc(l.depart)}</td><td>${esc(l.destination)}</td><td>${esc(l.purpose)}</td><td>${esc(l.end)}<br>${esc(l.arrive)}</td></tr>`).join("");
- const backRows=legs.map((l,i)=>{const h=i===0?d.totalHours:0,r=i===0?d.allowance:0;return `<tr><td>${esc((l.depart||"").slice(0,10))}</td><td>Odchod: ${esc(l.start)} ${esc((l.depart||"").slice(11))}<br>Príchod: ${esc(l.end||l.destination)} ${esc((l.arrive||"").slice(11))}</td><td>${esc(d.vehicle)}</td><td></td><td>${h?money(h)+" hod.":""}</td><td></td><td>${r?money(r):""}</td><td></td><td></td><td></td><td></td></tr>`}).join("");
+ const frontRows=legs.map((l,i)=>`<tr><td>${i+1}. ${esc(l.start)}<br>${esc(l.depart)}</td><td>${(l.destinations||[l.destination]).map(x=>esc(x)).join("<br>")}</td><td>${esc(l.purpose)}</td><td>${esc(l.end)}<br>${esc(l.arrive)}</td></tr>`).join("");
+ const dailyRows=(d.dailyAllowance||[]).map((day,i)=>`<tr><td>${esc(day.date)}</td><td>${i===0?("Odchod: "+esc(legs[0]?.start||"")+" "+esc((legs[0]?.depart||"").slice(11))):"Pokračovanie služobnej cesty"}${i===((d.dailyAllowance||[]).length-1)?("<br>Príchod: "+esc(legs[legs.length-1]?.end||"")+" "+esc((legs[legs.length-1]?.arrive||"").slice(11))):""}</td><td>${esc(d.vehicle)}</td><td></td><td>${money(day.hours)} hod.</td><td></td><td>${money(day.amount)}</td><td></td><td></td><td>${money(day.amount)}</td><td></td></tr>`).join("");
+ const backRows=dailyAllowanceRows(dailyRows);
  const front=`<div class="travel-sheet"><h2>CESTOVNÝ PRÍKAZ</h2><div class="travel-grid"><div class="travel-line">Zamestnávateľ: Gemerské osvetové stredisko Rožňava</div><div class="travel-line">Osobné číslo: ${esc(d.personal)}</div><div class="travel-line">1. Priezvisko, meno, titul: ${esc(d.employee)}</div><div class="travel-line">Útvar: ${esc(d.department)}</div><div class="travel-line">2. Bydlisko: ${esc(d.address)}</div><div class="travel-line">Telefón, klapka: ${esc(d.phone)}</div><div class="travel-line">Normálny pracovný čas: ${esc(d.workFrom)} – ${esc(d.workTo)}</div></div>
  <h3>Začiatok a priebeh cesty / miesto výkonu práce / účel / koniec cesty</h3><table class="travel-table"><thead><tr><th>Začiatok cesty (miesto, dátum, hod.)</th><th>Miesto výkonu práce</th><th>Účel cesty</th><th>Koniec cesty (miesto, dátum)</th></tr></thead><tbody>${frontRows}</tbody></table>
  <div class="travel-line">3. Spolucestujúci: ${esc(d.companions)}</div><div class="travel-line">4. Určený dopravný prostriedok: ${esc(d.vehicle)}</div><div class="travel-line">5. Predpokladaná čiastka výdavkov EUR: ${esc(d.estimated)}</div><div class="travel-line">6. Povolený preddavok EUR: ${esc(d.advance)} &nbsp; Vyplatený dňa: ${esc(d.advance_date)} &nbsp; Pokl. doklad číslo: ${esc(d.receipt)}</div>
  <p class="travel-small">Vyplatenie preddavku, súhlasy a schválenie – doplní príslušná osoba.</p><div class="travel-signs"><div>Podpis pokladníka</div><div>Súhlas zamestnanca §57 ZP</div><div>Dátum a podpis zamestnanca oprávneného na povolenie cesty</div><div>Podpis zamestnanca</div></div></div>`;
- const back=`<div class="travel-sheet"><h2>VYÚČTOVANIE PRACOVNEJ CESTY</h2><table class="travel-table"><thead><tr><th>Dátum</th><th>Odchod – príchod, miesto konania / podčiarknite</th><th>Použitý dopravný prostriedok</th><th>Vzdialenosť km</th><th>Začiatok a koniec výkonu práce (hod.)</th><th>Cestovné a miestna preprava EUR</th><th>Stravné EUR</th><th>Nocľažné EUR</th><th>Nutné vedľajšie výdavky EUR</th><th>Spolu EUR</th><th>Upravené EUR</th></tr></thead><tbody>${backRows}<tr><td colspan="6"><b>Spolu EUR</b></td><td>${money(d.allowance)}</td><td></td><td></td><td></td><td></td></tr></tbody></table>
+ const back=`<div class="travel-sheet"><h2>VYÚČTOVANIE PRACOVNEJ CESTY</h2><table class="travel-table"><thead><tr><th>Dátum</th><th>Odchod – príchod, miesto konania / podčiarknite</th><th>Použitý dopravný prostriedok</th><th>Vzdialenosť km</th><th>Začiatok a koniec výkonu práce (hod.)</th><th>Cestovné a miestna preprava EUR</th><th>Stravné EUR</th><th>Nocľažné EUR</th><th>Nutné vedľajšie výdavky EUR</th><th>Spolu EUR</th><th>Upravené EUR</th></tr></thead><tbody>${backRows}<tr><td colspan="6"><b>Spolu EUR</b></td><td>${money(d.allowance)}</td><td></td><td></td><td>${money(d.allowance)}</td><td></td></tr></tbody></table>
  <p class="travel-small">Stravné podľa oznámenia č. 280 účinného od 1. 12. 2025: 5 až 12 hodín 9,30 €, nad 12 až 18 hodín 13,80 €, nad 18 hodín 20,60 €. Vypočítané z uvedeného trvania cesty.</p>
  <p>Vyhlasujem, že som všetky údaje uviedol/uviedla úplne a správne.</p><div class="travel-signs"><div>Vyúčtoval/a – dátum a podpis zamestnanca</div><div>Účtovateľka</div><div>Dátum a podpis pokladníka</div><div>Schválil (dátum a podpis)</div></div>
- <h3>Účtovné a pokladničné vysporiadanie – ponechané prázdne pre účtovníčku</h3><table class="travel-table"><tr><td>Účtovaná náhrada EUR</td><td></td><td>Preddavok EUR</td><td></td></tr><tr><td>Doplatok / preplatok EUR</td><td></td><td>Účtovací predpis – Má dať / Dal / Čiastka / Stredisko / Zákazka</td><td></td></tr></table></div>`;
+ <h3>Účtovné a pokladničné vysporiadanie – vypĺňa účtovníčka</h3><table class="travel-table"><tr><td>Účtovaná náhrada EUR</td><td>${esc(d.accounting?.adjusted)}</td><td>Preddavok EUR</td><td>${esc(d.accounting?.advance)}</td></tr><tr><td>Doplatok EUR</td><td>${esc(d.accounting?.balanceDue)}</td><td>Preplatok EUR</td><td>${esc(d.accounting?.overpayment)}</td></tr><tr><td>Má dať</td><td>${esc(d.accounting?.debit)}</td><td>Dal</td><td>${esc(d.accounting?.credit)}</td></tr><tr><td>Čiastka</td><td>${esc(d.accounting?.amount)}</td><td>Stredisko / Zákazka</td><td>${esc(d.accounting?.costCenter)} / ${esc(d.accounting?.job)}</td></tr></table><p class="travel-small">Vyúčtovanie doplnila účtovníčka: ${esc(d.accounting?.updatedBy)} ${esc(d.accounting?.updatedAt)}</p></div>`;
  const report=`<div class="service-report-paper"><h2>Gemerské osvetové stredisko Rožňava<br>Správa zo služobnej cesty</h2>
  <div class="report-line"><b>Zamestnanec:</b> ${esc(d.employee)}</div>
  <div class="report-line"><b>Vykonal dňa/v dňoch:</b> ${esc(legs.map(l=>(l.depart||"").slice(0,10)).filter(Boolean).join(" – "))}</div>
- <div class="report-line"><b>Služobnú cestu do:</b> ${esc(legs.map(l=>l.destination||l.end).filter(Boolean).join(" → "))}</div>
+ <div class="report-line"><b>Služobnú cestu do:</b> ${esc(legs.map(l=>(l.destinations||[l.destination]).filter(Boolean).join(", ")||l.end).filter(Boolean).join(" → "))}</div>
  <div class="report-line"><b>Za účelom:</b> ${esc(legs.map(l=>l.purpose).filter(Boolean).join("; "))}</div>
  <div><b>Správa o výsledkoch jednania (uviesť s kým bolo jednané, prejednávaná problematika, závery, resp. dojednania):</b></div><div class="report-results"></div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-top:3mm"><div>V Rožňave dňa: __________________</div><div>Podpis zamestnanca: __________________</div></div></div>`;
@@ -799,7 +858,7 @@ function renderTravelPrint(item){
 }
 function showTravelRecords(){
  const mine=travelRecords.filter(x=>x.employeeId===loggedInStaff?.id),el=document.getElementById("travelRecordsList");
- el.innerHTML=mine.length?'<table><thead><tr><th>Vytvorené</th><th>Trasa</th><th>Stravné</th><th>Akcie</th></tr></thead><tbody>'+mine.map(x=>`<tr><td>${new Date(x.created).toLocaleDateString("sk-SK")}</td><td>${esc(x.data.legs.map(l=>l.start+" → "+(l.destination||l.end)).join("; "))}</td><td>${money(x.data.allowance)} €</td><td><button class="secondary" onclick="renderTravelPrint(travelRecords.find(y=>y.id==='${x.id}'))">Tlačiť</button> <button class="secondary" onclick="openTravelOrder('${x.id}')">Upraviť</button> <button class="danger" onclick="deleteTravelRecord('${x.id}')">Vymazať</button></td></tr>`).join("")+'</tbody></table>':'<div class="empty">Zatiaľ nemáte uložené cestovné príkazy.</div>';
+ el.innerHTML=mine.length?'<table><thead><tr><th>Vytvorené</th><th>Trasa</th><th>Stravné</th><th>Akcie</th></tr></thead><tbody>'+mine.map(x=>`<tr><td>${new Date(x.created).toLocaleDateString("sk-SK")}</td><td>${esc(x.data.legs.map(l=>l.start+" → "+((l.destinations||[l.destination]).join(", ")||l.end)).join("; "))}</td><td>${money(x.data.allowance)} €</td><td><button class="secondary" onclick="renderTravelPrint(travelRecords.find(y=>y.id==='${x.id}'))">Tlačiť</button> <button class="secondary" onclick="openTravelOrder('${x.id}')">Upraviť</button> <button class="danger" onclick="deleteTravelRecord('${x.id}')">Vymazať</button></td></tr>`).join("")+'</tbody></table>':'<div class="empty">Zatiaľ nemáte uložené cestovné príkazy.</div>';
  showView("travelRecordsView");
 }
 function deleteTravelRecord(id){if(!confirm("Vymazať cestovný príkaz?"))return;travelRecords=travelRecords.filter(x=>x.id!==id);localStorage.setItem("vv_travel_records",JSON.stringify(travelRecords));showTravelRecords()}
@@ -874,6 +933,30 @@ function showServiceReports(){
  showView("serviceReportRecordsView");
 }
 function deleteServiceReport(id){if(!confirm("Vymazať správu?"))return;serviceReports=serviceReports.filter(x=>x.id!==id);localStorage.setItem("vv_service_reports",JSON.stringify(serviceReports));showServiceReports()}
+
+
+let accountingEditingTripId=null;
+function showAccountantTravelRecords(){
+ if(loggedInStaff?.access!=="accountant"){alert("Táto evidencia je dostupná iba účtovníčke.");return}
+ const el=document.getElementById("accountantTravelList");
+ el.innerHTML=travelRecords.length?'<table><thead><tr><th>Zamestnanec</th><th>Trasa</th><th>Stravné</th><th>Stav vyúčtovania</th><th>Akcie</th></tr></thead><tbody>'+travelRecords.map(x=>`<tr><td>${esc(x.data.employee)}</td><td>${esc(x.data.legs.map(l=>l.start+" → "+((l.destinations||[l.destination]).join(", ")||l.end)).join("; "))}</td><td>${money(x.data.allowance)} €</td><td>${x.data.accounting?.updatedAt?"Doplnené":"Čaká na vyúčtovanie"}</td><td><button class="secondary" onclick="editTravelAccounting('${x.id}')">Doplniť / upraviť</button> <button class="secondary" onclick="renderTravelPrint(travelRecords.find(y=>y.id==='${x.id}'))">Náhľad tlače</button></td></tr>`).join("")+'</tbody></table>':'<div class="empty">Zatiaľ nie sú uložené cestovné príkazy.</div>';
+ showView("accountantTravelView");
+}
+function editTravelAccounting(id){
+ if(loggedInStaff?.access!=="accountant")return;
+ const item=travelRecords.find(x=>x.id===id);if(!item)return;
+ accountingEditingTripId=id;const a=item.data.accounting||{};
+ document.getElementById("accountingTripInfo").textContent=item.data.employee+" – "+(item.data.legs||[]).map(l=>l.start+" → "+((l.destinations||[l.destination]).join(", ")||l.end)).join("; ");
+ const fields={adjusted:"ac_adjusted",advance:"ac_advance",balanceDue:"ac_balance_due",overpayment:"ac_overpayment",debit:"ac_debit",credit:"ac_credit",amount:"ac_amount",costCenter:"ac_cost_center",job:"ac_job",note:"ac_note"};
+ Object.entries(fields).forEach(([k,id])=>document.getElementById(id).value=a[k]??"");
+ showView("accountingEditView");
+}
+document.getElementById("accountingForm").addEventListener("submit",e=>{
+ e.preventDefault();if(loggedInStaff?.access!=="accountant"||!accountingEditingTripId)return;
+ const item=travelRecords.find(x=>x.id===accountingEditingTripId);if(!item)return;
+ item.data.accounting={adjusted:document.getElementById("ac_adjusted").value,advance:document.getElementById("ac_advance").value,balanceDue:document.getElementById("ac_balance_due").value,overpayment:document.getElementById("ac_overpayment").value,debit:document.getElementById("ac_debit").value,credit:document.getElementById("ac_credit").value,amount:document.getElementById("ac_amount").value,costCenter:document.getElementById("ac_cost_center").value,job:document.getElementById("ac_job").value,note:document.getElementById("ac_note").value,updatedBy:loggedInStaff.full,updatedAt:new Date().toLocaleString("sk-SK")};
+ localStorage.setItem("vv_travel_records",JSON.stringify(travelRecords));accountingEditingTripId=null;alert("Vyúčtovanie bolo uložené.");showAccountantTravelRecords();
+});
 
 </script></body>
 </html>
