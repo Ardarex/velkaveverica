@@ -150,7 +150,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   <select id="loginStaffSelect" style="width:100%;margin:8px 0 14px;padding:12px"><option value="">Vyberte svoje meno</option></select>
   <label for="loginPassword" style="display:block;margin-top:10px">Heslo</label><input id="loginPassword" type="password" placeholder="Zadajte heslo" style="width:100%;margin:8px 0 14px;padding:12px">
   <button class="primary" style="width:100%" onclick="demoLogin()">Prihlásiť sa</button>
-  <p style="font-size:12px;color:#666;margin-top:16px">Testovacie spoločné heslo: osvetarv. V tejto HTML ukážke nie je heslo bezpečne chránené; na ostrú prevádzku treba samostatné serverové účty.</p>
+  
  </div>
 </div>
 
@@ -361,7 +361,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 <section id="travelRecordsView" class="hidden">
  <div class="rowhead"><div><h1>Moje cestovné príkazy</h1><button class="secondary" onclick="showView('homeView')">← Späť</button></div></div><div class="card"><div id="travelRecordsList"></div></div>
 </section>
-<section id="travelPrintView" class="hidden"><div id="travelPrintContent"></div><div class="actions no-print"><button class="primary" onclick="window.print()">Tlačiť cestovný príkaz (predná a zadná strana)</button><button class="secondary" onclick="showView('homeView')">Späť</button></div></section>
+<section id="travelPrintView" class="hidden"><div id="travelPrintContent"></div><div class="actions no-print"><button class="primary" onclick="window.print()">Tlačiť cestovný príkaz – predná strana</button><button class="secondary" onclick="showView('homeView')">Späť</button></div></section>
 
 <section id="staffFormView" class="hidden">
  <div class="rowhead"><div><h1 id="staffFormTitle">Formulár</h1><p class="sub">Vyplňte údaje a formulár si môžete vytlačiť. Tieto formuláre sa neposielajú na schválenie sekretariátu.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
@@ -840,27 +840,14 @@ document.getElementById("travelForm").addEventListener("submit",e=>{
 });
 function dailyAllowanceRows(rows){return rows}
 function renderTravelPrint(item){
- const d=item.data,legs=d.legs||[];
- const frontRows=legs.map((l,i)=>`<tr><td>${i+1}. ${esc(l.start)}<br>${esc(l.depart)}</td><td>${(l.destinations||[l.destination]).map(x=>esc(x)).join("<br>")}</td><td>${esc(l.purpose)}</td><td>${esc(l.end)}<br>${esc(l.arrive)}</td></tr>`).join("");
- const dailyRows=(d.dailyAllowance||[]).map((day,i)=>`<tr><td>${esc(day.date)}</td><td>${i===0?("Odchod: "+esc(legs[0]?.start||"")+" "+esc((legs[0]?.depart||"").slice(11))):"Pokračovanie služobnej cesty"}${i===((d.dailyAllowance||[]).length-1)?("<br>Príchod: "+esc(legs[legs.length-1]?.end||"")+" "+esc((legs[legs.length-1]?.arrive||"").slice(11))):""}</td><td>${esc(d.vehicle)}</td><td></td><td>${money(day.hours)} hod.</td><td></td><td>${money(day.amount)}</td><td></td><td></td><td>${money(day.amount)}</td><td></td></tr>`).join("");
- const backRows=dailyAllowanceRows(dailyRows);
- const front=`<div class="travel-sheet"><h2>CESTOVNÝ PRÍKAZ</h2><div class="travel-grid"><div class="travel-line">Zamestnávateľ: Gemerské osvetové stredisko Rožňava</div><div class="travel-line">Osobné číslo: ${esc(d.personal)}</div><div class="travel-line">1. Priezvisko, meno, titul: ${esc(d.employee)}</div><div class="travel-line">Útvar: ${esc(d.department)}</div><div class="travel-line">2. Bydlisko: ${esc(d.address)}</div><div class="travel-line">Telefón, klapka: ${esc(d.phone)}</div><div class="travel-line">Normálny pracovný čas: ${esc(d.workFrom)} – ${esc(d.workTo)}</div></div>
- <h3>Začiatok a priebeh cesty / miesto výkonu práce / účel / koniec cesty</h3><table class="travel-table"><thead><tr><th>Začiatok cesty (miesto, dátum, hod.)</th><th>Miesto výkonu práce</th><th>Účel cesty</th><th>Koniec cesty (miesto, dátum)</th></tr></thead><tbody>${frontRows}</tbody></table>
- <div class="travel-line">3. Spolucestujúci: ${esc(d.companions)}</div><div class="travel-line">4. Určený dopravný prostriedok: ${esc(d.vehicle)}</div><div class="travel-line">5. Predpokladaná čiastka výdavkov EUR: ${esc(d.estimated)}</div><div class="travel-line">6. Povolený preddavok EUR: ${esc(d.advance)} &nbsp; Vyplatený dňa: ${esc(d.advance_date)} &nbsp; Pokl. doklad číslo: ${esc(d.receipt)}</div>
- <p class="travel-small">Vyplatenie preddavku, súhlasy a schválenie – doplní príslušná osoba.</p><div class="travel-signs"><div>Podpis pokladníka</div><div>Súhlas zamestnanca §57 ZP</div><div>Dátum a podpis zamestnanca oprávneného na povolenie cesty</div><div>Podpis zamestnanca</div></div></div>`;
- const back=`<div class="travel-sheet"><h2>VYÚČTOVANIE PRACOVNEJ CESTY</h2><table class="travel-table"><thead><tr><th>Dátum</th><th>Odchod – príchod, miesto konania / podčiarknite</th><th>Použitý dopravný prostriedok</th><th>Vzdialenosť km</th><th>Začiatok a koniec výkonu práce (hod.)</th><th>Cestovné a miestna preprava EUR</th><th>Stravné EUR</th><th>Nocľažné EUR</th><th>Nutné vedľajšie výdavky EUR</th><th>Spolu EUR</th><th>Upravené EUR</th></tr></thead><tbody>${backRows}<tr><td colspan="6"><b>Spolu EUR</b></td><td>${money(d.allowance)}</td><td></td><td></td><td>${money(d.allowance)}</td><td></td></tr></tbody></table>
- <p class="travel-small">Stravné podľa oznámenia č. 280 účinného od 1. 12. 2025: 5 až 12 hodín 9,30 €, nad 12 až 18 hodín 13,80 €, nad 18 hodín 20,60 €. Vypočítané z uvedeného trvania cesty.</p>
- <p>Vyhlasujem, že som všetky údaje uviedol/uviedla úplne a správne.</p><div class="travel-signs"><div>Vyúčtoval/a – dátum a podpis zamestnanca</div><div>Účtovateľka</div><div>Dátum a podpis pokladníka</div><div>Schválil (dátum a podpis)</div></div>
- <h3>Účtovné a pokladničné vysporiadanie – vypĺňa účtovníčka</h3><table class="travel-table"><tr><td>Účtovaná náhrada EUR</td><td>${esc(d.accounting?.adjusted)}</td><td>Preddavok EUR</td><td>${esc(d.accounting?.advance)}</td></tr><tr><td>Doplatok EUR</td><td>${esc(d.accounting?.balanceDue)}</td><td>Preplatok EUR</td><td>${esc(d.accounting?.overpayment)}</td></tr><tr><td>Má dať</td><td>${esc(d.accounting?.debit)}</td><td>Dal</td><td>${esc(d.accounting?.credit)}</td></tr><tr><td>Čiastka</td><td>${esc(d.accounting?.amount)}</td><td>Stredisko / Zákazka</td><td>${esc(d.accounting?.costCenter)} / ${esc(d.accounting?.job)}</td></tr></table><p class="travel-small">Vyúčtovanie doplnila účtovníčka: ${esc(d.accounting?.updatedBy)} ${esc(d.accounting?.updatedAt)}</p></div>`;
- const report=`<div class="service-report-paper"><h2>Gemerské osvetové stredisko Rožňava<br>Správa zo služobnej cesty</h2>
- <div class="report-line"><b>Zamestnanec:</b> ${esc(d.employee)}</div>
- <div class="report-line"><b>Vykonal dňa/v dňoch:</b> ${esc(legs.map(l=>(l.depart||"").slice(0,10)).filter(Boolean).join(" – "))}</div>
- <div class="report-line"><b>Služobnú cestu do:</b> ${esc(legs.map(l=>(l.destinations||[l.destination]).filter(Boolean).join(", ")||l.end).filter(Boolean).join(" → "))}</div>
- <div class="report-line"><b>Za účelom:</b> ${esc(legs.map(l=>l.purpose).filter(Boolean).join("; "))}</div>
- <div><b>Správa o výsledkoch jednania (uviesť s kým bolo jednané, prejednávaná problematika, závery, resp. dojednania):</b></div><div class="report-results">${esc(d.serviceReport?.results||"")}</div>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-top:3mm"><div>V Rožňave dňa: ${esc(d.serviceReport?.date||"")}</div><div>Podpis zamestnanca: ${esc(d.serviceReport?.signature||"")}</div></div></div>`;
- document.getElementById("travelPrintContent").innerHTML=`<div class="travel-print-stack">${front}${report}</div><div class="travel-sheet">${back}</div>`;
- document.body.classList.add("travel-print");showView("travelPrintView");
+  const d=item.data,legs=d.legs||[];
+  const frontRows=legs.map((l,i)=>`<tr><td>${i+1}. ${esc(l.start)}<br>${esc(l.depart)}</td><td>${(l.destinations||[l.destination]).map(x=>esc(x)).join("<br>")}</td><td>${esc(l.purpose)}</td><td>${esc(l.end)}<br>${esc(l.arrive)}</td></tr>`).join("");
+  const front=`<div class="travel-sheet"><h2>CESTOVNÝ PRÍKAZ</h2><div class="travel-grid"><div class="travel-line">Zamestnávateľ: Gemerské osvetové stredisko Rožňava</div><div class="travel-line">Osobné číslo: ${esc(d.personal)}</div><div class="travel-line">1. Priezvisko, meno, titul: ${esc(d.employee)}</div><div class="travel-line">Útvar: ${esc(d.department)}</div><div class="travel-line">2. Bydlisko: ${esc(d.address)}</div><div class="travel-line">Telefón, klapka: ${esc(d.phone)}</div><div class="travel-line">Normálny pracovný čas: ${esc(d.workFrom)} – ${esc(d.workTo)}</div></div>
+  <h3>Začiatok a priebeh cesty / miesto výkonu práce / účel / koniec cesty</h3><table class="travel-table"><thead><tr><th>Začiatok cesty (miesto, dátum, hod.)</th><th>Miesto výkonu práce</th><th>Účel cesty</th><th>Koniec cesty (miesto, dátum)</th></tr></thead><tbody>${frontRows}</tbody></table>
+  <div class="travel-line">3. Spolucestujúci: ${esc(d.companions)}</div><div class="travel-line">4. Určený dopravný prostriedok: ${esc(d.vehicle)}</div><div class="travel-line">5. Predpokladaná čiastka výdavkov EUR: ${esc(d.estimated)}</div><div class="travel-line">6. Povolený preddavok EUR: ${esc(d.advance)} &nbsp; Vyplatený dňa: ${esc(d.advance_date)} &nbsp; Pokl. doklad číslo: ${esc(d.receipt)}</div>
+  <p class="travel-small">Vyplatenie preddavku, súhlasy a schválenie – doplní príslušná osoba.</p><div class="travel-signs"><div>Podpis pokladníka</div><div>Súhlas zamestnanca §57 ZP</div><div>Dátum a podpis zamestnanca oprávneného na povolenie cesty</div><div>Podpis zamestnanca</div></div></div>`;
+  document.getElementById("travelPrintContent").innerHTML=front;
+  document.body.classList.add("travel-print");showView("travelPrintView");
 }
 function showTravelRecords(){
  const mine=travelRecords.filter(x=>x.employeeId===loggedInStaff?.id),el=document.getElementById("travelRecordsList");
@@ -910,8 +897,13 @@ function openServiceReport(travelId=null,reportId=null){
  activeServiceTravelId=trip?.id||null;
  const d=trip?.data||{};
  document.getElementById("sr_employee").value=saved?.data.employee||loggedInStaff.full;
- document.getElementById("sr_dates").value=saved?.data.dates||((d.legs||[]).map(l=>(l.depart||"").slice(0,10)).filter(Boolean).join(" – "));
- document.getElementById("sr_destination").value=saved?.data.destination||((d.legs||[]).map(l=>l.destination||l.end).filter(Boolean).join(" → "));
+  const legs=d.legs||[];
+  const tripStart=legs.map(l=>(l.depart||"").slice(0,10)).find(Boolean)||"";
+  const tripEnd=[...legs].reverse().map(l=>(l.arrive||l.depart||"").slice(0,10)).find(Boolean)||tripStart;
+  const savedDates=(saved?.data.dates||"").split(/\s*[–-]\s*/);
+  document.getElementById("sr_date_from").value=savedDates[0]||tripStart;
+  document.getElementById("sr_date_to").value=savedDates[1]||savedDates[0]||tripEnd;
+  document.getElementById("sr_destination").value=saved?.data.destination||legs.map(l=>(l.destinations||[l.destination||l.end]).filter(Boolean).join(", ")).filter(Boolean).join(" → ");
  document.getElementById("sr_purpose").value=saved?.data.purpose||((d.legs||[]).map(l=>l.purpose).filter(Boolean).join("; "));
  document.getElementById("sr_results").value=saved?.data.results||"";
  document.getElementById("sr_date").value=saved?.data.date||new Date().toISOString().slice(0,10);
@@ -920,7 +912,9 @@ function openServiceReport(travelId=null,reportId=null){
 }
 document.getElementById("serviceReportForm").addEventListener("submit",e=>{
  e.preventDefault();
- const data={employee:document.getElementById("sr_employee").value,dates:document.getElementById("sr_dates").value,destination:document.getElementById("sr_destination").value,purpose:document.getElementById("sr_purpose").value,results:document.getElementById("sr_results").value,date:document.getElementById("sr_date").value,signature:document.getElementById("sr_signature").value};
+  const dateFrom=document.getElementById("sr_date_from").value,dateTo=document.getElementById("sr_date_to").value;
+  const dates=dateFrom?(dateTo&&dateTo!==dateFrom?`${dateFrom} – ${dateTo}`:dateFrom):(dateTo||"");
+  const data={employee:document.getElementById("sr_employee").value,dates,destination:document.getElementById("sr_destination").value,purpose:document.getElementById("sr_purpose").value,results:document.getElementById("sr_results").value,date:document.getElementById("sr_date").value,signature:document.getElementById("sr_signature").value};
  const old=serviceEditingId?serviceReports.find(x=>x.id===serviceEditingId):null;
  const item={id:old?.id||"SZ-"+Date.now(),employeeId:loggedInStaff.id,data,created:old?.created||new Date().toISOString()};
  if(old)serviceReports[serviceReports.findIndex(x=>x.id===old.id)]=item;else serviceReports.unshift(item);
@@ -931,8 +925,7 @@ document.getElementById("serviceReportForm").addEventListener("submit",e=>{
  }
  serviceEditingId=null;
  const linkedTrip=activeServiceTravelId?travelRecords.find(x=>x.id===activeServiceTravelId):null;
- if(linkedTrip){renderTravelPrint(linkedTrip);}
- else{renderServiceReportPrint(item);}
+  renderServiceReportPrint(item);
 });
 function renderServiceReportPrint(item){
  const d=item.data;
