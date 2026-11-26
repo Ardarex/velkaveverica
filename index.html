@@ -75,40 +75,43 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
  <h1>Vitajte vo VEĽKEJ VEVERICI</h1><p class="sub">Jedno vstupné miesto pre interné systémy a služby.</p>
  <div class="grid">
   <div class="card tile span-12"><div class="ico">🚗</div><div><h2>Auto – žiadanky na prepravu</h2><p>Elektronická žiadanka o vozidlo, schvaľovanie sekretariátom a tlač dvoch rovnakých kópií na jeden list A4.</p><div class="actions"><button class="primary" onclick="showView('requestView')">Vyplniť žiadanku</button><button class="secondary" onclick="showView('secretaryView')">Sekretariát – evidencia</button></div></div></div>
-  <div class="card tile span-12"><div class="ico">🧾</div><div><h2>Objednávky – nákup tovaru a služieb</h2><p>Zamestnanci môžu vytvárať objednávky. Sekretariát má samostatný prehľad a evidenciu všetkých objednávok. Údaje GOS a vybraného dodávateľa sa predvyplnia.</p><div class="actions"><button class="primary" onclick="showView('orderView')">Vytvoriť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Sekretariát – objednávky</button></div></div></div>
+  <div class="card tile span-12"><div class="ico">🧾</div><div><h2>Objednávky – nákup tovaru a služieb</h2><p>Zamestnanci môžu vytvárať objednávky. Sekretariát má samostatný prehľad a evidenciu všetkých objednávok. Údaje GOS a vybraného dodávateľa sa predvyplnia.</p><div class="actions"><button class="primary" onclick="showView('orderView')">Vytvoriť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Sekretariát – objednávky</button><button class="secondary" onclick="showView('suppliersView')">Register dodávateľov</button></div></div></div>
  </div>
 </section>
 
 <section id="requestView" class="hidden">
- <div class="rowhead"><div><h1>Žiadanka na prepravu</h1><p class="sub">Vyplňte údaje a odošlite žiadanku sekretariátu.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
- <div class="notice">Po výbere vozidla sa automaticky doplní jeho EČV a číslo objednávky podľa evidencie.</div>
+ <div class="rowhead"><div><h1>Žiadanka na prepravu</h1><p class="sub">Vyplňte žiadanku podľa papierového tlačiva.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
+ <div class="notice">Najprv vyberte auto. Jeho EČV a číslo objednávky sa doplnia automaticky.</div>
  <form id="requestForm" class="card">
   <div class="formgrid">
-   <div class="field"><label for="car">Požadované vozidlo *</label><select id="car" required><option value="">Vyberte vozidlo</option><option value="FIAT">FIAT</option><option value="ŠKODA OCTAVIA">ŠKODA OCTAVIA</option></select></div>
-   <div class="field"><label for="orderNo">Číslo objednávky žiadateľa</label><input id="orderNo" readonly placeholder="Doplní sa podľa vozidla"></div>
-   <div class="field"><label for="ecv">EČV</label><input id="ecv" readonly placeholder="Doplní sa podľa vozidla"></div>
-   <div class="field"><label for="requester">Žiadateľ *</label><input id="requester" required placeholder="Meno a priezvisko"></div>
-   <div class="field full"><label for="passengers">Mená cestujúcich</label><textarea id="passengers" placeholder="Mená všetkých cestujúcich"></textarea></div>
-   <div class="field full"><label for="cargo">Druh, hmotnosť a rozmer nákladu</label><input id="cargo" placeholder="Ak sa prepravuje náklad"></div>
+   <div class="field"><label for="car">Auto *</label><select id="car" required><option value="">Vyberte auto</option><option value="FIAT">FIAT</option><option value="ŠKODA OCTAVIA">ŠKODA OCTAVIA</option></select></div>
+   <div class="field"><label for="ecv">EČV</label><input id="ecv" readonly placeholder="Doplní sa po výbere auta"></div>
+   <div class="field"><label for="orderNo">Číslo objednávky žiadateľa</label><input id="orderNo" readonly placeholder="Doplní sa po výbere auta"></div>
+   <div class="field"><label for="requester">Žiadateľ – meno a priezvisko *</label><input id="requester" required placeholder="Kto žiada o auto?"></div>
+   <div class="field full"><label for="passengers">Mená cestujúcich</label><textarea id="passengers" placeholder="Kto pôjde autom?"></textarea></div>
+   <div class="field full"><label for="cargo">Druh, hmotnosť a rozmer nákladu</label><input id="cargo" placeholder="Vyplňte, ak veziete náklad"></div>
    <div class="field"><label for="date">Deň pristavenia *</label><input id="date" type="date" required></div>
    <div class="field"><label for="time">Hodina pristavenia *</label><input id="time" type="time" required></div>
-   <div class="field"><label for="from">Odkiaľ *</label><input id="from" required></div>
-   <div class="field"><label for="to">Kam *</label><input id="to" required></div>
-   <div class="field"><label for="reportTo">Vodič sa hlási u</label><input id="reportTo"></div>
-   <div class="field"><label for="phone">Telefón</label><input id="phone" type="tel"></div>
-   <div class="field"><label for="duration">Požadovaný čas vozidla</label><input id="duration" placeholder="Napr. 4 hodiny alebo 2 dni"></div>
-   <div class="field"><label for="purpose">Účel jazdy *</label><input id="purpose" required></div>
-   <div class="field"><label for="charge">Vyúčtuje na vrub</label><input id="charge" placeholder="Organizácia / stredisko"></div>
-   <div class="field full"><label for="notes">Poznámka žiadateľa</label><textarea id="notes"></textarea></div>
+   <div class="field"><label for="place">Miesto pristavenia</label><input id="place" placeholder="Kde má auto pristaviť?"></div>
+   <div class="field"><label for="from">Odkiaľ *</label><input id="from" required placeholder="Miesto odchodu"></div>
+   <div class="field"><label for="to">Kam *</label><input id="to" required placeholder="Cieľ cesty"></div>
+   <div class="field"><label for="reportTo">Vodič sa hlási u</label><input id="reportTo" placeholder="Meno osoby"></div>
+   <div class="field"><label for="phone">Telefón</label><input id="phone" type="tel" placeholder="Telefónne číslo"></div>
+   <div class="field"><label for="duration">Vozidlo je požadované na</label><input id="duration" placeholder="Počet hodín alebo dní"></div>
+   <div class="field"><label for="purpose">Účel jazdy</label><input id="purpose" placeholder="Prečo potrebujete auto?"></div>
+   <div class="field"><label for="charge">Vyúčtuje na vrub</label><input id="charge" placeholder="Stredisko / projekt / činnosť"></div>
+   <div class="field full"><label for="notes">Poznámka žiadateľa</label><textarea id="notes" placeholder="Ďalšie dôležité informácie"></textarea></div>
+   <div class="field full"><label for="requesterSign">Meno žiadateľa na podpis</label><input id="requesterSign" placeholder="Meno a priezvisko"></div>
   </div>
-  <div class="actions"><button class="primary" type="submit">Uložiť a odoslať sekretariátu</button><button class="secondary" type="reset">Vymazať formulár</button></div>
+  <div class="actions"><button class="primary" type="submit">Uložiť žiadanku</button><button class="secondary" type="reset">Vymazať</button></div>
+  <p class="small">Po uložení sa žiadanka zobrazí v evidencii sekretariátu na tomto zariadení a v tomto prehliadači.</p>
  </form>
 </section>
 
 
 <section id="orderView" class="hidden">
  <div class="rowhead"><div><h1>Nová objednávka</h1><p class="sub">Údaje odberateľa Gemerského osvetového strediska sa doplnia automaticky.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
- <div class="notice">Číslo objednávky sa pridelí automaticky pri uložení. Dodávateľa vyberte zo zoznamu – jeho identifikačné údaje sa doplnia.</div>
+ <div class="notice">Číslo objednávky sa pridelí pri uložení. Dodávateľa vyberte z registra alebo vyplňte ručne. Pred tlačou skontrolujte jeho údaje.</div>
  <form id="orderForm" class="card">
   <h2>Odberateľ – automaticky predvyplnené údaje</h2>
   <div class="formgrid">
@@ -122,7 +125,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
   <h2>Dodávateľ</h2>
   <div class="formgrid">
-   <div class="field"><label for="supplier">Vyberte dodávateľa *</label><select id="supplier" required><option value="">Vyberte dodávateľa</option><option value="alza">Alza.sk s. r. o.</option><option value="custom">Iný dodávateľ – vyplniť ručne</option></select><div class="supplier-note">Údaje Alza.sk sú predvyplnené podľa jej zverejnených obchodných údajov.</div></div>
+   <div class="field"><label for="supplier">Vyberte dodávateľa *</label><select id="supplier" required><option value="">Vyberte dodávateľa</option><option value="manual">Iný dodávateľ – ručne</option><option value="custom">Iný dodávateľ – vyplniť ručne</option></select><div class="supplier-note">Ak údaj v registri chýba, doplňte ho podľa zmluvy alebo fakturačných údajov.</div></div>
    <div class="field"><label for="supplierName">Obchodné meno *</label><input id="supplierName" required></div>
    <div class="field"><label for="supplierAddress">Sídlo / adresa *</label><input id="supplierAddress" required></div>
    <div class="field"><label for="supplierIco">IČO</label><input id="supplierIco"></div>
@@ -154,6 +157,12 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
  <div class="rowhead"><div><h1>Sekretariát – evidencia objednávok</h1><p class="sub">Sekretariát vidí objednávky vytvorené zamestnancami a môže ich otvoriť alebo vytlačiť.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
  <div class="card"><div class="rowhead"><h2>Vystavené objednávky</h2><button class="secondary" onclick="renderOrders()">Obnoviť</button></div><div id="ordersList"></div></div>
 </section>
+<section id="suppliersView" class="hidden"><div class="rowhead"><div><h1>Register dodávateľov a zmluvných partnerov</h1><p class="sub">Uložené údaje sa dajú použiť pri vystavení objednávky.</p></div><button class="secondary" onclick="showView('homeView')">← Späť</button></div>
+<div class="card"><h2>Pridať alebo upraviť partnera</h2><form id="supplierForm"><div class="formgrid">
+<div class="field"><label for="regName">Názov *</label><input id="regName" required></div><div class="field"><label for="regAddress">Adresa</label><input id="regAddress"></div>
+<div class="field"><label for="regIco">IČO</label><input id="regIco"></div><div class="field"><label for="regDic">DIČ</label><input id="regDic"></div><div class="field"><label for="regVat">IČ DPH</label><input id="regVat"></div><div class="field"><label for="regSource">Zdroj údajov / poznámka</label><input id="regSource"></div>
+</div><div class="actions"><button class="primary" type="submit">Uložiť partnera</button><button class="secondary" type="button" onclick="exportSuppliers()">Export JSON</button><button class="secondary" type="button" onclick="document.getElementById('importSuppliers').click()">Import JSON</button><input type="file" accept=".json,application/json" id="importSuppliers" style="display:none"></div></form></div>
+<div class="card" style="margin-top:16px"><h2>Uložení partneri</h2><div id="supplierList"></div></div></section>
 <section id="orderPrintArea" class="hidden"></section>
 
 <section id="secretaryView" class="hidden">
@@ -163,13 +172,13 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   <div class="card span-4"><div class="small">Schválené</div><h1 id="approvedCount">0</h1></div>
   <div class="card span-4"><div class="small">Spolu žiadaniek</div><h1 id="totalCount">0</h1></div>
  </div>
- <div class="card"><div class="rowhead"><h2>Prijaté žiadanky</h2><button class="secondary" onclick="renderRequests()">Obnoviť</button></div>
+ <div class="card"><div class="rowhead"><h2>Prijaté žiadanky</h2><div class="actions"><button class="secondary" onclick="renderRequests()">Obnoviť</button><button class="secondary" onclick="exportRequests()">Zálohovať žiadanky</button></div></div>
  <div id="requestList"></div></div>
 </section>
 
 <section id="printArea" class="hidden"></section>
 </main>
-<footer>VEĽKÁ VEVERICA</footer>
+<footer>VEĽKÁ VEVERICA · Žiadanky sa ukladajú v prehliadači a sekretariát ich vie exportovať do zálohy.</footer>
 <script>
 const vehicles={
  "FIAT":{ecv:"RV 955 BN",order:"53/2026"},
@@ -177,54 +186,112 @@ const vehicles={
 };
 let requests=JSON.parse(localStorage.getItem("vv_requests")||"[]");
 let currentRole="employee";
-function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();window.scrollTo(0,0)}
+function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea","suppliersView"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();if(id==="suppliersView")renderSuppliers();if(id==="orderView")refreshSupplierOptions();window.scrollTo(0,0)}
 document.getElementById("roleSwitch").addEventListener("change",e=>{currentRole=e.target.value;document.getElementById("roleLabel").textContent="Režim: "+(currentRole==="secretary"?"Sekretariát":"Zamestnanec");showView(currentRole==="secretary"?"secretaryView":"homeView")});
 document.getElementById("car").addEventListener("change",e=>{let v=vehicles[e.target.value];document.getElementById("ecv").value=v?.ecv||"";document.getElementById("orderNo").value=v?.order||""});
-document.getElementById("requestForm").addEventListener("submit",e=>{
- e.preventDefault();let data={};["car","orderNo","ecv","requester","passengers","cargo","date","time","from","to","reportTo","phone","duration","purpose","charge","notes"].forEach(id=>data[id]=document.getElementById(id).value.trim());
- data.id="Ž-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-6);data.status="Čaká na schválenie";data.created=new Date().toLocaleString("sk-SK");data.approver="";requests.unshift(data);save();e.target.reset();document.getElementById("ecv").value="";document.getElementById("orderNo").value="";alert("Žiadanka bola uložená a odoslaná sekretariátu.");showView("homeView");
-});
-function save(){localStorage.setItem("vv_requests",JSON.stringify(requests))}
+function save(){
+ try{
+  localStorage.setItem("vv_requests",JSON.stringify(requests));
+  return true;
+ }catch(err){
+  alert("Žiadanku sa nepodarilo uložiť v tomto prehliadači. Skontrolujte voľné miesto alebo povoľte ukladanie stránok.");
+  return false;
+ }
+}
 function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+document.getElementById("requestForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ const form=e.currentTarget;
+ if(!form.reportValidity()) return;
+ let data={};
+ ["car","orderNo","ecv","requester","passengers","cargo","date","time","place","from","to","reportTo","phone","duration","purpose","charge","notes","requesterSign"].forEach(id=>data[id]=(document.getElementById(id)?.value||"").trim());
+ data.id="Ž-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
+ data.status="Čaká na schválenie";
+ data.created=new Date().toLocaleString("sk-SK");
+ data.approver="";
+ requests.unshift(data);
+ if(!save()){requests.shift();return;}
+ form.reset();
+ document.getElementById("ecv").value="";
+ document.getElementById("orderNo").value="";
+ alert("Žiadanka "+data.id+" je uložená. Sekretariát ju nájde v evidencii žiadaniek.");
+ showView("homeView");
+});
 function renderRequests(){
  document.getElementById("pendingCount").textContent=requests.filter(r=>r.status==="Čaká na schválenie").length;
  document.getElementById("approvedCount").textContent=requests.filter(r=>r.status==="Schválená").length;
  document.getElementById("totalCount").textContent=requests.length;
- let el=document.getElementById("requestList");if(!requests.length){el.innerHTML='<div class="empty">Zatiaľ nebola odoslaná žiadna žiadanka.</div>';return}
- el.innerHTML='<table><thead><tr><th>Číslo</th><th>Žiadateľ</th><th>Vozidlo / EČV</th><th>Termín</th><th>Stav</th><th>Akcia</th></tr></thead><tbody>'+requests.map((r,i)=>`<tr><td>${esc(r.id)}</td><td>${esc(r.requester)}</td><td>${esc(r.car)}<br>${esc(r.ecv)}</td><td>${esc(r.date)} ${esc(r.time)}</td><td><span class="badge ${r.status==="Schválená"?"":"wait"}">${esc(r.status)}</span></td><td><button class="secondary" onclick="detail(${i})">Otvoriť</button></td></tr>`).join("")+'</tbody></table>';
+ let el=document.getElementById("requestList");
+ if(!requests.length){el.innerHTML='<div class="empty">Zatiaľ nebola uložená žiadna žiadanka.</div>';return}
+ el.innerHTML='<table><thead><tr><th>Číslo</th><th>Žiadateľ</th><th>Auto / EČV</th><th>Termín</th><th>Stav</th><th>Akcie</th></tr></thead><tbody>'+
+ requests.map((r,i)=>`<tr><td>${esc(r.id)}</td><td>${esc(r.requester)}</td><td>${esc(r.car)}<br>${esc(r.ecv)}</td><td>${esc(r.date)} ${esc(r.time)}</td><td><span class="badge ${r.status==="Schválená"?"":"wait"}">${esc(r.status)}</span></td><td><button class="secondary" onclick="detail(${i})">Detail</button> ${r.status==="Čaká na schválenie"?`<button class="primary" onclick="approve(${i})">Schváliť a tlačiť</button> <button class="danger" onclick="reject(${i})">Zamietnuť</button>`:`<button class="secondary" onclick="printRequest(requests[${i}])">Tlačiť</button>`}</td></tr>`).join("")+'</tbody></table><div id="requestDetail" style="margin-top:14px"></div>';
 }
-function detail(i){let r=requests[i];let text=`${r.id} · ${r.requester} · ${r.car} · ${r.date} ${r.time}`;let act=r.status==="Čaká na schválenie"?`<button class="primary" onclick="approve(${i})">Schváliť</button> <button class="danger" onclick="reject(${i})">Zamietnuť</button>`:`<span class="badge">${esc(r.status)}</span>`;
- let w=window.open("","_blank","width=650,height=700");w.document.write(`<html lang="sk"><meta charset="utf-8"><title>Detail žiadanky</title><body style="font:14px Arial;padding:24px;color:#223"><h2>Žiadanka ${esc(r.id)}</h2><p>${esc(text)}</p><p><b>Číslo objednávky:</b> ${esc(r.orderNo)} · <b>EČV:</b> ${esc(r.ecv)}</p><p><b>Cestujúci:</b> ${esc(r.passengers)}</p><p><b>Náklad:</b> ${esc(r.cargo)}</p><p><b>Trasa:</b> ${esc(r.from)} – ${esc(r.to)}</p><p><b>Vodič sa hlási u:</b> ${esc(r.reportTo)} · <b>Telefón:</b> ${esc(r.phone)}</p><p><b>Požadovaný čas:</b> ${esc(r.duration)}</p><p><b>Účel jazdy:</b> ${esc(r.purpose)}</p><p><b>Vyúčtuje na vrub:</b> ${esc(r.charge)}</p><p><b>Poznámka:</b> ${esc(r.notes)}</p><p><b>Vytvorené:</b> ${esc(r.created)}</p><p>${act}</p><button onclick="window.close()">Zavrieť</button></body></html>`);
- // Actions are also available in the list after returning; detail window is a read-only preview.
+function detail(i){
+ let r=requests[i],el=document.getElementById("requestDetail");
+ const rows=[["Žiadateľ",r.requester],["Cestujúci",r.passengers],["Náklad",r.cargo],["Deň, hodina, miesto",`${r.date} ${r.time} · ${r.place}`],["Odkiaľ – kam",`${r.from} – ${r.to}`],["Vodič sa hlási u",r.reportTo],["Telefón",r.phone],["Vozidlo požadované na",r.duration],["Účel jazdy",r.purpose],["Vyúčtuje na vrub",r.charge],["Poznámka",r.notes],["EČV",r.ecv],["Číslo objednávky",r.orderNo]];
+ el.innerHTML=`<div class="card"><h2>Žiadanka ${esc(r.id)}</h2><div class="formgrid">${rows.map(([k,v])=>`<div><strong>${esc(k)}</strong><div>${esc(v)||"—"}</div></div>`).join("")}</div></div>`;
 }
-function approve(i){requests[i].status="Schválená";requests[i].approver="Sekretariát";save();renderRequests();printRequest(requests[i])}
-function reject(i){requests[i].status="Zamietnutá";save();renderRequests()}
+function approve(i){
+ requests[i].status="Schválená";
+ requests[i].approver="Sekretariát";
+ requests[i].approvedAt=new Date().toLocaleString("sk-SK");
+ if(!save())return;
+ renderRequests();
+ printRequest(requests[i]);
+}
+function reject(i){
+ requests[i].status="Zamietnutá";
+ requests[i].rejectedAt=new Date().toLocaleString("sk-SK");
+ if(!save())return;
+ renderRequests();
+}
 function printRequest(r){
  const val=(label,value,wide=false)=>`<div class="printcell ${wide?"printwide":""}"><strong>${label}</strong>${esc(value)||"—"}</div>`;
  const copy=()=>`<div class="printcopy"><h2>ŽIADANKA NA PREPRAVU</h2><div class="printsub">${esc(r.car)} · ${esc(r.ecv)} · Číslo objednávky: ${esc(r.orderNo)}</div><div class="printtable">
  ${val("Žiadateľ",r.requester)}${val("Mená cestujúcich",r.passengers)}
  ${val("Druh, hmotnosť a rozmer nákladu",r.cargo,true)}
- ${val("Deň a hodina pristavenia",r.date+" · "+r.time)}${val("Odkiaľ – kam",r.from+" – "+r.to)}
+ ${val("Deň, hodina a miesto pristavenia",r.date+" · "+r.time+" · "+r.place,true)}${val("Odkiaľ – kam",r.from+" – "+r.to)}
  ${val("Vodič sa hlási u",r.reportTo)}${val("Telefón",r.phone)}
  ${val("Vozidlo požadované na",r.duration)}${val("Účel jazdy",r.purpose)}
  ${val("Vyúčtuje na vrub",r.charge,true)}${val("Poznámka žiadateľa",r.notes,true)}
- ${val("Dátum a podpis žiadateľa","",false)}${val("Dátum a podpis schvaľujúceho","",false)}
+ ${val("Dátum a podpis žiadateľa",r.requesterSign,false)}${val("Dátum a podpis schvaľujúceho","",false)}
  ${val("Meno vodiča","")}${val("Druh vozidla / EČV",r.car+" / "+r.ecv)}
  ${val("Dátum a podpis zodpovednej osoby za autoprevádzku","",true)}
  </div><div class="printfooter"><span>Žiadanka: ${esc(r.id)}</span><span>Stav: ${esc(r.status)}</span><span>Výtlačok ${r===requests[0]?"":" "}</span></div></div>`;
  let area=document.getElementById("printArea");area.innerHTML=copy()+'<div class="cutline">ODDELIŤ</div>'+copy();showView("printArea");setTimeout(()=>window.print(),250);
 }
 
+function exportRequests(){
+ const blob=new Blob([JSON.stringify(requests,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="velka-veverica-ziadanky-zaloha.json";a.click();URL.revokeObjectURL(url);
+}
 // Objednávky – ukážková lokálna evidencia
 let orders=JSON.parse(localStorage.getItem("vv_orders")||"[]");
-const supplierData={
- alza:{name:"Alza.sk s. r. o.",address:"Karadžičova 8, 821 08 Bratislava",ico:"36562939",dic:"2021863811",icdph:"SK2021863811"}
-};
-document.getElementById("supplier").addEventListener("change",e=>{
- const s=supplierData[e.target.value];
- ["supplierName","supplierAddress","supplierIco","supplierDic","supplierIcDph"].forEach((id,i)=>document.getElementById(id).value=s?[s.name,s.address,s.ico,s.dic,s.icdph][i]:"");
- ["supplierName","supplierAddress","supplierIco","supplierDic","supplierIcDph"].forEach(id=>document.getElementById(id).readOnly=e.target.value==="alza");
-});
+const seedSuppliers=[
+ {name:"Alza.sk s. r. o.",address:"Karadžičova 8, 821 08 Bratislava – mestská časť Ružinov",ico:"36562939",dic:"2021863811",icdph:"",source:"Firemné údaje podľa oficiálnych obchodných podmienok Alza.sk; nie je tým potvrdený nákup GOS. https://www.alza.sk/obchodne-podmienky-art10.htm"},
+ {name:"Schrotos",address:"Košická 52, 048 01 Rožňava",ico:"",dic:"",icdph:"",source:"Lokálny firemný záznam pod názvom Schrotos; právny názov a IČO/DIČ neoverené – pred použitím doplniť z faktúry alebo cenovej ponuky."},
+ {name:"Orange Slovensko, a.s.",address:"Metodova 8, 821 08 Bratislava",ico:"35697270",dic:"",icdph:"",source:"Dodávateľ v zmluve GOS A28612012 v CRZ. https://crz.gov.sk/zmluva/12677143/"},
+ {name:"ROD - HAR s.r.o.",address:"Hervartov 12, Hervartov",ico:"36515990",dic:"",icdph:"",source:"Dodávateľ v zmluve GOS 32/2026 v CRZ. https://crz.gov.sk/zmluva/12362414/"},
+ {name:"Národné osvetové centrum",address:"Námestie SNP 471/12, 812 34 Bratislava",ico:"00164615",dic:"",icdph:"",source:"Zmluvný partner GOS – CRZ NOC 271/2026; nie je automaticky dodávateľ nákupov. https://www.crz.gov.sk/zmluva/12724197/"},
+ {name:"Slovenský ľudový umelecký kolektív",address:"Balkánska 31/66, 853 08 Bratislava",ico:"00164780",dic:"",icdph:"",source:"Zmluvný partner GOS – CRZ 78/2026; nie je automaticky dodávateľ nákupov. https://crz.gov.sk/zmluva/12666868/"}
+];
+let suppliers=[];
+try{
+ suppliers=JSON.parse(localStorage.getItem('vv_suppliers')||'null')||[];
+ const known=new Set(suppliers.map(v=>(v.name||'').trim().toLowerCase()));
+ seedSuppliers.forEach(v=>{if(!known.has(v.name.toLowerCase()))suppliers.push(v)});
+ localStorage.setItem('vv_suppliers',JSON.stringify(suppliers));
+}catch(e){suppliers=[...seedSuppliers]}
+function saveSuppliers(){try{localStorage.setItem('vv_suppliers',JSON.stringify(suppliers));return true}catch(e){alert('Register sa nepodarilo uložiť.');return false}}
+function refreshSupplierOptions(){let select=document.getElementById('supplier'),previous=select.value;select.innerHTML='<option value="">Vyberte dodávateľa</option>'+suppliers.map((v,i)=>'<option value="s'+i+'">'+esc(v.name)+'</option>').join('')+'<option value="manual">Iný dodávateľ – ručne</option>';if([...select.options].some(x=>x.value===previous))select.value=previous}
+document.getElementById('supplier').addEventListener('change',e=>{const idx=Number(e.target.value.slice(1));const v=e.target.value.startsWith('s')?suppliers[idx]:null;['supplierName','supplierAddress','supplierIco','supplierDic','supplierIcDph'].forEach((id,i)=>{document.getElementById(id).value=v?[v.name,v.address,v.ico,v.dic,v.icdph][i]||'':'';document.getElementById(id).readOnly=false})});
+function renderSuppliers(){const el=document.getElementById('supplierList');el.innerHTML='<table><thead><tr><th>Partner</th><th>IČO</th><th>Adresa</th><th>Zdroj</th><th></th></tr></thead><tbody>'+suppliers.map((v,i)=>'<tr><td>'+esc(v.name)+'</td><td>'+esc(v.ico)+'</td><td>'+esc(v.address)+'</td><td>'+esc(v.source)+'</td><td><button class="secondary" onclick="editSupplier('+i+')">Upraviť</button></td></tr>').join('')+'</tbody></table>'}
+let editSupplierIndex=-1;
+function editSupplier(i){let v=suppliers[i];editSupplierIndex=i;['regName','regAddress','regIco','regDic','regVat','regSource'].forEach((id,j)=>document.getElementById(id).value=[v.name,v.address,v.ico,v.dic,v.icdph,v.source][j]||'');window.scrollTo(0,0)}
+document.getElementById('supplierForm').addEventListener('submit',e=>{e.preventDefault();const v={name:regName.value.trim(),address:regAddress.value.trim(),ico:regIco.value.trim(),dic:regDic.value.trim(),icdph:regVat.value.trim(),source:regSource.value.trim()};if(!v.name)return;if(editSupplierIndex>=0)suppliers[editSupplierIndex]=v;else suppliers.push(v);if(saveSuppliers()){editSupplierIndex=-1;e.target.reset();renderSuppliers();refreshSupplierOptions()}});
+function exportSuppliers(){const blob=new Blob([JSON.stringify(suppliers,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='velka-veverica-dodavatelia.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+document.getElementById('importSuppliers').addEventListener('change',async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data)||!data.every(x=>typeof x.name==='string'))throw Error('Nesprávny formát');if(!confirm('Nahradiť celý register importovanými údajmi?'))return;suppliers=data;saveSuppliers();renderSuppliers();refreshSupplierOptions()}catch(err){alert('Import sa nepodaril: '+err.message)}e.target.value=''});
 document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
 function calcOrderTotal(){
  let total=0,rate=parseFloat(document.getElementById("vatRate").value)||0;
