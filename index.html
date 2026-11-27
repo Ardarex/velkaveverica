@@ -412,7 +412,24 @@ document.getElementById("requestForm").addEventListener("submit",e=>{
   data.approver=requests[idx].approver||"";data.approvedAt=requests[idx].approvedAt||"";
   requests[idx]=data;
  }else{
-  data.id="Ž-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
+  // Samostatné poradové číslovanie podľa vozidla.
+  // V roku 2026 pokračuje FIAT od 54 a ŠKODA od 82.
+  const year=new Date().getFullYear();
+  const carKey=String(data.car||"").toUpperCase().includes("FIAT")?"FIAT":"SKODA";
+  const firstNumber=(carKey==="FIAT" && year===2026)?54:
+                    (carKey==="SKODA" && year===2026)?82:1;
+  const seqKey="vv_request_seq_"+carKey+"_"+year;
+  const storedSeq=parseInt(localStorage.getItem(seqKey)||String(firstNumber-1),10)||firstNumber-1;
+  const existingMax=requests.reduce((max,r)=>{
+   const isFiat=String(r.car||"").toUpperCase().includes("FIAT");
+   if(isFiat!==(carKey==="FIAT")) return max;
+   const m=String(r.id||"").match(new RegExp("^(\\d+)/"+year+"$"));
+   return m?Math.max(max,parseInt(m[1],10)||0):max;
+  },firstNumber-1);
+  const nextSeq=Math.max(firstNumber-1,storedSeq,existingMax)+1;
+  data.id=String(nextSeq)+"/"+year;
+  try{localStorage.setItem(seqKey,String(nextSeq));}
+  catch(err){alert("Nepodarilo sa uložiť poradové číslo žiadanky.");return;}
   data.status="Čaká na schválenie";data.created=new Date().toLocaleString("sk-SK");data.approver="";
   requests.unshift(data);
  }
