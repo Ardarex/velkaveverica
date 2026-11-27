@@ -294,7 +294,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
    <div class="field"><label for="deliveryMethod">Spôsob dodávky</label><input id="deliveryMethod" placeholder="Napr. doručenie na adresu"></div>
    <div class="field"><label for="orderPlace">Miesto vystavenia</label><input id="orderPlace" value="Rožňava"></div>
    <div class="field"><label for="orderDate">Dátum objednávky</label><input id="orderDate" type="date"></div>
-   <div class="field"><label>Číslo objednávky</label><input value="Pridelí sa automaticky od 2026/191" readonly></div>
+   <div class="field"><label for="orderNumberPreview">Číslo objednávky – nasledujúce voľné číslo</label><input id="orderNumberPreview" value="Načítavam…" readonly><small id="orderNumberHint">Číslo sa definitívne pridelí pri uložení.</small></div>
   </div>
   <div class="field" style="max-width:220px"><label for="priceMode">Zadávaná cena</label><select id="priceMode"><option value="net">Zadávam cenu bez DPH</option><option value="gross">Zadávam cenu s DPH</option></select></div><div class="field" style="max-width:220px"><label for="vatRate">Sadzba DPH</label><select id="vatRate"><option value="23">23 %</option><option value="19">19 %</option><option value="5">5 %</option><option value="0">0 %</option></select></div><p><strong>Celková cena s DPH: <span id="orderTotal">0,00 €</span></strong></p>
   <div class="actions"><button class="primary" type="submit">Uložiť objednávku a prideliť číslo</button><button class="secondary" type="reset">Vymazať formulár</button></div>
@@ -638,7 +638,25 @@ function calcOrderTotal(changedInput){
 document.getElementById("orderItems").addEventListener("input",e=>{if(e.target.matches(".item-net,.item-gross"))calcOrderTotal(e.target);else calcOrderTotal()});
 document.getElementById("orderItems").addEventListener("change",e=>{if(e.target.matches(".item-net,.item-gross"))calcOrderTotal(e.target)});
 document.getElementById("vatRate").addEventListener("change",()=>calcOrderTotal());
-document.getElementById("orderForm").addEventListener("reset",()=>setTimeout(()=>{document.getElementById("supplier").dispatchEvent(new Event("change"));calcOrderTotal()},0));
+document.getElementById("orderForm").addEventListener("reset",()=>setTimeout(()=>{document.getElementById("supplier").dispatchEvent(new Event("change"));calcOrderTotal();vvRefreshNextOrderNumber()},0));
+async function vvRefreshNextOrderNumber(){
+ const field=document.getElementById("orderNumberPreview");
+ const hint=document.getElementById("orderNumberHint");
+ if(!field || !loggedInStaff?.id)return;
+ field.value="Načítavam…";
+ try{
+  const {data,error}=await supabaseClient.rpc("gos_next_order_number");
+  if(error)throw error;
+  const number=Array.isArray(data)?data[0]:data;
+  if(!number)throw new Error("Databáza nevrátila nasledujúce číslo.");
+  field.value=number;
+  if(hint)hint.textContent="Predbežné číslo. Definitívne číslo sa potvrdí pri uložení objednávky.";
+ }catch(error){
+  field.value="Nepodarilo sa načítať";
+  if(hint)hint.textContent="Chyba načítania čísla: "+(error.message||String(error));
+  console.error("Načítanie nasledujúceho čísla objednávky:",error);
+ }
+}
 async function vvRefreshSharedOrders(){
  if(!loggedInStaff?.id)return;
  const {data,error}=await supabaseClient.from("gos_orders").select("*").order("created_at",{ascending:false});
@@ -695,7 +713,7 @@ document.getElementById("orderForm").addEventListener("submit",async e=>{
    const {data,error}=await supabaseClient.rpc("gos_create_order",{p_data:o});
    if(error)throw error;const result=Array.isArray(data)?data[0]:data;
    if(!result?.id||!result?.order_number)throw new Error("Databáza nevrátila číslo objednávky. Skontrolujte funkciu gos_create_order.");
-   saved={...o,id:result.id,number:result.order_number,_db:true};
+   saved={...o,id:result.id,number:result.order_number,_db:true};document.getElementById("orderNumberPreview").value=result.order_number;document.getElementById("orderNumberHint").textContent="Toto číslo bolo definitívne pridelené.";
   }
   editingOrderId=null;
   await vvRefreshSharedOrders();
@@ -709,7 +727,7 @@ fillOrderRequester();
 calcOrderTotal();
 
 function renderOrders(){let el=document.getElementById("ordersList");if(!orders.length){el.innerHTML='<div class="empty">Zatiaľ nie sú vytvorené objednávky.</div>';return;}el.innerHTML='<table><thead><tr><th>Číslo</th><th>Dátum</th><th>Vystavil/a</th><th>Dodávateľ</th><th>Cena s DPH</th><th>Akcie</th></tr></thead><tbody>'+orders.map((o,i)=>`<tr><td>${esc(o.number)}</td><td>${esc(o.date)}</td><td>${esc(o.requester||"")}</td><td>${esc(o.supplier)}</td><td>${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td><button class="secondary" onclick="showOrderPrint(orders[${i}])">Tlačiť</button> <button class="secondary" onclick="editOrder(${i})">Upraviť</button> <button class="danger" onclick="deleteOrder(${i})">Vymazať</button></td></tr>`).join("")+'</tbody></table>';}
-function editOrder(i){const o=orders[i];editingOrderId=o.id;showView("orderView");const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};set("orderRequester",o.requester);set("supplier","manual");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);set("orderVia",o.via);set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("vatRate",o.items?.[0]?.rate??23);set("priceMode","net");const body=document.getElementById("orderItems");body.innerHTML="";(o.items?.length?o.items:[{name:"",qty:1,price:0,rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-net" type="number" min="0" step="0.01"></td><td><input class="item-gross" type="number" min="0" step="0.01"></td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-net").value=x.priceNet??x.price??0;tr.querySelector(".item-gross").value=x.priceGross??(Number(x.priceNet??x.price??0)*(1+(Number(x.rate)||0)/100));body.appendChild(tr)});calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";}
+function editOrder(i){const o=orders[i];editingOrderId=o.id;showView("orderView");const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};set("orderNumberPreview",o.number);document.getElementById("orderNumberHint").textContent="Upravujete existujúcu objednávku – číslo zostáva zachované.";set("orderRequester",o.requester);set("supplier","manual");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);set("orderVia",o.via);set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("vatRate",o.items?.[0]?.rate??23);set("priceMode","net");const body=document.getElementById("orderItems");body.innerHTML="";(o.items?.length?o.items:[{name:"",qty:1,price:0,rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-net" type="number" min="0" step="0.01"></td><td><input class="item-gross" type="number" min="0" step="0.01"></td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-net").value=x.priceNet??x.price??0;tr.querySelector(".item-gross").value=x.priceGross??(Number(x.priceNet??x.price??0)*(1+(Number(x.rate)||0)/100));body.appendChild(tr)});calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";}
 async function deleteOrder(i){const o=orders[i];if(!confirm("Naozaj chcete natrvalo vymazať túto objednávku?"))return;const {error}=await supabaseClient.from("gos_orders").delete().eq("id",o.id);if(error){alert("Vymazanie zlyhalo: "+error.message);return;}await vvRefreshSharedOrders();}
 function clearOrders(){alert("Hromadné mazanie objednávok je z bezpečnostných dôvodov vypnuté. Vymažte konkrétnu objednávku.");}
 
@@ -726,7 +744,7 @@ function importAllData(event){
 
 function showOrderPrint(o){
  const items=(o.items||[]).map((x,i)=>{const net=Number(x.priceNet??x.price??0),gross=Number(x.priceGross??(net*(1+(Number(x.rate)||0)/100)));return `<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td>${esc(x.qty)}</td><td>${net.toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td>${gross.toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td></tr>`}).join("");
- document.getElementById("orderPrintArea").innerHTML=`<div class="order-paper"><div style="display:flex;justify-content:space-between;gap:20px"><div><b>Odberateľ:</b><br>Gemerské osvetové stredisko<br>Betliarska 8<br>048 01 Rožňava<br>IČO: 31297781<br>DIČ: 2021452400<br><br>Objednávku vystavil/a: ${esc(o.requester||"")}<br>Kontakt: 0915 778 740</div><div><h2>OBJEDNÁVKA č.: ${esc(o.number)}</h2><p>v ${esc(o.place)} dňa: ${esc(o.date)}</p><b>Dodávateľ:</b><br>${esc(o.supplier)}<br>${esc(o.address)}<br>IČO: ${esc(o.ico)}<br>DIČ: ${esc(o.dic)}<br>IČ DPH: ${esc(o.icdph)}</div></div><p><b>Predmet objednávky:</b><br>${esc(o.description)}</p><p><b>Cez koho / sprostredkovateľ:</b> ${esc(o.via||"—")}</p><table><thead><tr><th>Por. č.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH</th><th>Cena s DPH</th></tr></thead><tbody>${items}</tbody></table><h3 style="text-align:right">Celková cena s DPH: ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</h3><p>Dodacia lehota: ${esc(o.delivery)}<br>Spôsob dodávky: ${esc(o.method)}</p><div style="margin-top:45px;border-top:1px solid #777;padding-top:8px">Pečiatka a podpis objednávateľa</div><p class="small">Vytvorené v systéme VEĽKÁ VEVERICA · číslo ${esc(o.number)}</p><div class="no-print actions"><button class="primary" onclick="window.print()">Tlačiť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Späť na zoznam</button></div></div>`;
+ document.getElementById("orderPrintArea").innerHTML=`<div class="order-paper"><div style="display:flex;justify-content:space-between;gap:20px"><div><b>Odberateľ:</b><br>Gemerské osvetové stredisko<br>Betliarska 8<br>048 01 Rožňava<br>IČO: 31297781<br>DIČ: 2021452400<br><br>Objednávku vystavil/a: ${esc(o.requester||"")}<br>Kontakt: 0915 778 740</div><div><h2>OBJEDNÁVKA č.: ${esc(o.number)}</h2><p>v ${esc(o.place)} dňa: ${esc(o.date)}</p><b>Dodávateľ:</b><br>${esc(o.supplier)}<br>${esc(o.address)}<br>IČO: ${esc(o.ico)}<br>DIČ: ${esc(o.dic)}<br>IČ DPH: ${esc(o.icdph)}</div></div><p><b>Predmet objednávky:</b><br>${esc(o.description)}</p><p><b>Cez koho / sprostredkovateľ:</b> ${esc(o.via||"—")}</p><table><thead><tr><th>Por. č.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH</th><th>Cena s DPH</th></tr></thead><tbody>${items}</tbody></table><h3 style="text-align:right">Celková cena s DPH: ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</h3><p>Dodacia lehota: ${esc(o.delivery)}<br>Spôsob dodávky: ${esc(o.method)}</p><div style="margin-top:45px;border-top:1px solid #777;padding-top:8px">Pečiatka a podpis objednávateľa</div><div class="no-print actions"><button class="primary" onclick="window.print()">Tlačiť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Späť na zoznam</button></div></div>`;
  showView("orderPrintArea");document.body.classList.add("print-order");
 }
 
@@ -938,6 +956,7 @@ window.showView=function(id){
  if(["requestView","orderView","staffFormView"].includes(id) && !requireStaffProfile())return;
  oldRequestShowView(id);
  if(id==="requestView" || id==="orderView")applyStaffProfile();
+ if(id==="orderView" && !editingOrderId)vvRefreshNextOrderNumber();
 };
 initStaffLogin();
 (async()=>{
@@ -957,6 +976,7 @@ initStaffLogin();
      document.getElementById("roleLabel").textContent="Prihlásený: "+profile.full_name+" · "+profile.role;
      document.getElementById("roleSwitch").classList.add("hidden");
      applyStaffProfile();
+     vvRefreshNextOrderNumber();
      const b=document.getElementById("accountantTravelButton");
      if(b)b.style.display=["admin","director","accountant"].includes(profile.role)?"inline-flex":"none";
    }
