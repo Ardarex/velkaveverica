@@ -145,11 +145,12 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 <div id="loginGate" style="position:fixed;inset:0;z-index:99999;background:#f4f6f8;display:flex;align-items:center;justify-content:center;padding:20px">
  <div class="card" style="width:min(520px,100%);padding:28px">
   <h1 style="margin-top:0">VEĽKÁ VEVERICA</h1><h2>Prihlásenie zamestnanca</h2>
-  <p>Vyberte svoje meno zo zoznamu zamestnancov.</p>
-  <label for="loginStaffSelect">Zamestnanec</label>
-  <select id="loginStaffSelect" style="width:100%;margin:8px 0 14px;padding:12px"><option value="">Vyberte svoje meno</option></select>
-  <label for="loginPassword" style="display:block;margin-top:10px">Heslo</label><input id="loginPassword" type="password" placeholder="Zadajte heslo" style="width:100%;margin:8px 0 14px;padding:12px">
+  <p>Prihláste sa pracovným e-mailom a heslom, ktoré vám pridelil administrátor.</p>
+  <label for="loginEmail">Pracovný e-mail</label>
+  <input id="loginEmail" type="email" autocomplete="username" placeholder="meno@gos.sk" style="width:100%;margin:8px 0 14px;padding:12px">
+  <label for="loginPassword" style="display:block;margin-top:10px">Heslo</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Zadajte heslo" style="width:100%;margin:8px 0 14px;padding:12px">
   <button class="primary" style="width:100%" onclick="demoLogin()">Prihlásiť sa</button>
+  <p id="loginError" role="alert" style="color:#9b3029;margin:12px 0 0"></p>
  </div>
 </div>
 
@@ -162,6 +163,12 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 <main>
 <section id="homeView">
  <h1>Vitajte vo VEĽKEJ VEVERICI</h1><p class="sub">Jedno vstupné miesto pre interné systémy a služby.</p><p id="activeStaffLabel" class="small"></p><button class="secondary" onclick="logoutStaff()">Odhlásiť sa</button>
+ <div id="adminCreatePanel" class="card span-12 hidden" style="margin:16px 0">
+  <h2>Administrácia – vytvorenie účtov zamestnancov</h2>
+  <p class="small">Vytvorí účty pre zamestnancov, ktorí ich ešte nemajú. Už existujúcim účtom heslo nezmení. Heslá sa zobrazia iba po vytvorení nových účtov.</p>
+  <button class="primary" id="createEmployeesButton" onclick="createEmployeeAccounts()">Vytvoriť účty zamestnancov</button>
+  <p id="createEmployeesStatus" class="small" aria-live="polite"></p>
+  <div id="createdEmployeesResults"></div>
  </div>
  <div class="grid">
   <div class="card tile span-12"><div class="ico">🚗</div><div><h2>Auto – žiadanky na prepravu</h2><p>Elektronická žiadanka o vozidlo, schvaľovanie sekretariátom a tlač dvoch rovnakých kópií na jeden list A4.</p><div class="actions"><button class="primary" onclick="showView('requestView')">Žiadanka o auto</button><button class="secondary" onclick="openTravelOrder()">Cestovný príkaz</button><button class="secondary" onclick="showTravelRecords()">Moje cestovné príkazy</button><button class="secondary" id="accountantTravelButton" style="display:none" onclick="showAccountantTravelRecords()">Účtovníčka – vyúčtovanie ciest</button><button class="secondary" onclick="openServiceReport()">Správa zo služobnej cesty</button><button class="secondary" onclick="showServiceReports()">Moje správy</button><button class="secondary" onclick="showView('secretaryView')">Sekretariát – evidencia</button></div></div></div>
@@ -184,15 +191,16 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
    <div class="field"><label for="requester">Žiadateľ – meno a priezvisko *</label><input id="requester" placeholder="Kto žiada o auto?"></div>
    <div class="field full"><label for="passengers">Mená cestujúcich</label><textarea id="passengers" placeholder="Kto pôjde autom?"></textarea></div>
    <div class="field full"><label for="cargo">Druh, hmotnosť a rozmer nákladu</label><input id="cargo" placeholder="Vyplňte, ak veziete náklad"></div>
-   <div class="field"><label for="date">Deň pristavenia *</label><input id="date" type="date"></div>
+   <div class="field"><label for="date">Dátum pristavenia *</label><input id="date" type="date" required></div>
+   <div class="field"><label for="dateTo">Dátum vrátenia vozidla *</label><input id="dateTo" type="date" required></div>
    <div class="field"><label for="time">Hodina pristavenia *</label><input id="time" type="time"></div>
    <div class="field"><label for="place">Miesto pristavenia</label><input id="place" placeholder="Kde má auto pristaviť?"></div>
    <div class="field"><label for="from">Odkiaľ *</label><input id="from" placeholder="Miesto odchodu"></div>
-   <div class="field"><label for="to">Kam *</label><input id="to" placeholder="Cieľ cesty"></div>
+   <div class="field"><label for="to">Kam / cieľ cesty *</label><input id="to" list="gosDestinations" placeholder="Vyberte alebo napíšte cieľ" required><datalist id="gosDestinations"><option value="Rožňava"><option value="Betliar"><option value="Dobšiná"><option value="Revúca"><option value="Tornaľa"><option value="Plešivec"><option value="Gemerská Poloma"><option value="Košice"><option value="Banská Bystrica"><option value="Bratislava"></datalist></div>
    <div class="field full"><label for="destinations">Ďalšie destinácie / zastávky</label><textarea id="destinations" placeholder="Zadajte ďalšie miesta alebo trasy, každú na samostatný riadok"></textarea></div>
    <div class="field"><label for="reportTo">Vodič sa hlási u</label><input id="reportTo" placeholder="Meno osoby"></div>
    <div class="field"><label for="phone">Telefón</label><input id="phone" type="tel" placeholder="Telefónne číslo"></div>
-   <div class="field"><label for="duration">Vozidlo je požadované na</label><div style="display:flex;gap:8px;align-items:center"><input id="duration" type="number" min="1" step="1" placeholder="Počet dní" style="flex:1"><span>deň / dní</span></div></div>
+   <div class="field"><label for="duration">Počet dní – vypočíta sa automaticky</label><div style="display:flex;gap:8px;align-items:center"><input id="duration" type="number" min="1" step="1" placeholder="Doplní sa podľa dátumov" style="flex:1" readonly><span>deň / dní</span></div></div>
    <div class="field"><label for="driverName">Meno vodiča</label><input id="driverName" placeholder="Meno a priezvisko vodiča"></div>
    <div class="field"><label for="purpose">Účel jazdy</label><input id="purpose" placeholder="Prečo potrebujete auto?"></div>
    <div class="field"><label for="charge">Vyúčtuje na vrub</label><input id="charge" value="GOS" readonly></div>
@@ -375,11 +383,48 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
 </section>
 <section id="staffPrintView" class="hidden"><div id="staffPrintContent"></div><div class="actions no-print"><button class="primary" onclick="window.print()">Tlačiť</button><button class="secondary" onclick="showView('homeView')">Späť na portál</button></div></section>
 </main>
-<footer>VEĽKÁ VEVERICA · Údaje sa ukladajú v tomto prehliadači.</footer>
+<footer>VEĽKÁ VEVERICA · Údaje sa synchronizujú so Supabase po prihlásení.<br><span id="cloudSyncStatus" class="small">Čakám na prihlásenie…</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL="https://fhditckgcsiqughwigzx.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_8nvrvpbLCnUc-tTZN-VuDg_rwXo7TPs";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+// Cloud backup/synchronization: one private snapshot per signed-in employee.
+const VV_CLOUD_KEYS=["vv_requests","vv_orders","vv_suppliers","vv_staff_records","vv_travel_records","vv_vacation_entitlements","vv_vacation_usage","vv_service_reports","vv_order_seq"];
+let vvCloudReady=false, vvCloudTimer=null, vvCloudSyncing=false;
+function vvReadSnapshot(){const out={}; for(const k of VV_CLOUD_KEYS){const v=localStorage.getItem(k); if(v!==null){try{out[k]=JSON.parse(v)}catch{out[k]=v}}} return out;}
+async function vvSaveSnapshot(){
+ if(!vvCloudReady || !loggedInStaff?.id || vvCloudSyncing) return;
+ vvCloudSyncing=true;
+ try{
+  const payload={owner_id:loggedInStaff.id,record_type:"portal_snapshot",data:vvReadSnapshot(),updated_at:new Date().toISOString()};
+  const {error}=await supabaseClient.from("app_records").upsert(payload,{onConflict:"owner_id,record_type"});
+  if(error) throw error;
+  const status=document.getElementById("cloudSyncStatus"); if(status) status.textContent="Synchronizované so Supabase";
+ }catch(e){console.error("Supabase sync:",e);const status=document.getElementById("cloudSyncStatus");if(status)status.textContent="Cloud synchronizácia zlyhala: "+(e.message||"skontrolujte RLS oprávnenia");}
+ finally{vvCloudSyncing=false;}
+}
+function vvScheduleSave(){if(!vvCloudReady)return;clearTimeout(vvCloudTimer);vvCloudTimer=setTimeout(vvSaveSnapshot,500);}
+const vvOriginalSetItem=Storage.prototype.setItem;
+Storage.prototype.setItem=function(key,value){vvOriginalSetItem.call(this,key,value);if(this===localStorage && VV_CLOUD_KEYS.includes(String(key)))vvScheduleSave();};
+async function vvLoadSnapshot(userId){
+ const {data,error}=await supabaseClient.from("app_records").select("data").eq("owner_id",userId).eq("record_type","portal_snapshot").maybeSingle();
+ if(error) throw error;
+ if(data?.data){for(const [k,v] of Object.entries(data.data)){if(VV_CLOUD_KEYS.includes(k))vvOriginalSetItem.call(localStorage,k,JSON.stringify(v));}}
+ // Refresh in-memory collections after cloud data has been restored.
+ if(typeof requests!=="undefined") requests=JSON.parse(localStorage.getItem("vv_requests")||"[]");
+ if(typeof orders!=="undefined") orders=JSON.parse(localStorage.getItem("vv_orders")||"[]");
+ if(typeof suppliers!=="undefined") suppliers=JSON.parse(localStorage.getItem("vv_suppliers")||"[]");
+ if(typeof staffRecords!=="undefined") staffRecords=JSON.parse(localStorage.getItem("vv_staff_records")||"[]");
+ if(typeof travelRecords!=="undefined") travelRecords=JSON.parse(localStorage.getItem("vv_travel_records")||"[]");
+ if(typeof vacationEntitlements!=="undefined") vacationEntitlements=JSON.parse(localStorage.getItem("vv_vacation_entitlements")||"{}");
+ if(typeof vacationUsage!=="undefined") vacationUsage=JSON.parse(localStorage.getItem("vv_vacation_usage")||"{}");
+ if(typeof serviceReports!=="undefined") serviceReports=JSON.parse(localStorage.getItem("vv_service_reports")||"[]");
+ vvCloudReady=true; const status=document.getElementById("cloudSyncStatus");if(status)status.textContent="Pripojené k Supabase";
+}
+
 const vehicles={
- "FIAT":{ecv:"RV 955 BN",order:"53/2026"},
+ "FIAT":{ecv:"RV 955 BN",order:"54/2026"},
  "ŠKODA OCTAVIA":{ecv:"AA 464 PC",order:"82/2026"}
 };
 let requests=JSON.parse(localStorage.getItem("vv_requests")||"[]");
@@ -389,6 +434,17 @@ let editingOrderId=null;
 function showView(id){["homeView","requestView","secretaryView","printArea","orderView","ordersSecretaryView","orderPrintArea","suppliersView","staffFormView","staffRecordsView","staffPrintView","travelFormView","travelRecordsView","travelPrintView","accountantTravelView","accountingEditView","serviceReportFormView","serviceReportRecordsView","serviceReportPrintView"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="secretaryView")renderRequests();window.scrollTo(0,0)}
 document.getElementById("roleSwitch").addEventListener("change",e=>{currentRole=e.target.value;document.getElementById("roleLabel").textContent="Režim: "+(currentRole==="secretary"?"Sekretariát":"Zamestnanec");showView(currentRole==="secretary"?"secretaryView":"homeView")});
 document.getElementById("car").addEventListener("change",e=>{let v=vehicles[e.target.value];document.getElementById("ecv").value=v?.ecv||"";document.getElementById("orderNo").value=v?.order||""});
+function updateVehicleDays(){
+ const a=document.getElementById("date").value,b=document.getElementById("dateTo").value,d=document.getElementById("duration");
+ if(!a||!b){d.value="";return}
+ const start=new Date(a+"T12:00:00"),end=new Date(b+"T12:00:00");
+ const days=Math.round((end-start)/86400000)+1;
+ d.value=days>0?days:"";
+ if(days<=0) document.getElementById("dateTo").setCustomValidity("Dátum vrátenia nesmie byť pred dátumom pristavenia.");
+ else document.getElementById("dateTo").setCustomValidity("");
+}
+document.getElementById("date").addEventListener("change",updateVehicleDays);
+document.getElementById("dateTo").addEventListener("change",updateVehicleDays);
 function save(){
  try{
   localStorage.setItem("vv_requests",JSON.stringify(requests));
@@ -404,7 +460,7 @@ document.getElementById("requestForm").addEventListener("submit",e=>{
  const form=e.currentTarget;
  if(!form.reportValidity()) return;
  let data={};
- ["car","orderNo","ecv","requester","passengers","cargo","date","time","place","from","to","destinations","reportTo","phone","duration","driverName","purpose","charge","notes","requesterSign"].forEach(id=>data[id]=(document.getElementById(id)?.value||"").trim());
+ ["car","orderNo","ecv","requester","passengers","cargo","date","dateTo","time","place","from","to","destinations","reportTo","phone","duration","driverName","purpose","charge","notes","requesterSign"].forEach(id=>data[id]=(document.getElementById(id)?.value||"").trim());
  if(editingRequestId){
   const idx=requests.findIndex(x=>x.id===editingRequestId);
   if(idx<0){alert("Žiadanka sa nenašla.");return;}
@@ -412,24 +468,7 @@ document.getElementById("requestForm").addEventListener("submit",e=>{
   data.approver=requests[idx].approver||"";data.approvedAt=requests[idx].approvedAt||"";
   requests[idx]=data;
  }else{
-  // Samostatné poradové číslovanie podľa vozidla.
-  // V roku 2026 pokračuje FIAT od 54 a ŠKODA od 82.
-  const year=new Date().getFullYear();
-  const carKey=String(data.car||"").toUpperCase().includes("FIAT")?"FIAT":"SKODA";
-  const firstNumber=(carKey==="FIAT" && year===2026)?54:
-                    (carKey==="SKODA" && year===2026)?82:1;
-  const seqKey="vv_request_seq_"+carKey+"_"+year;
-  const storedSeq=parseInt(localStorage.getItem(seqKey)||String(firstNumber-1),10)||firstNumber-1;
-  const existingMax=requests.reduce((max,r)=>{
-   const isFiat=String(r.car||"").toUpperCase().includes("FIAT");
-   if(isFiat!==(carKey==="FIAT")) return max;
-   const m=String(r.id||"").match(new RegExp("^(\\d+)/"+year+"$"));
-   return m?Math.max(max,parseInt(m[1],10)||0):max;
-  },firstNumber-1);
-  const nextSeq=Math.max(firstNumber-1,storedSeq,existingMax)+1;
-  data.id=String(nextSeq)+"/"+year;
-  try{localStorage.setItem(seqKey,String(nextSeq));}
-  catch(err){alert("Nepodarilo sa uložiť poradové číslo žiadanky.");return;}
+  data.id="Ž-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
   data.status="Čaká na schválenie";data.created=new Date().toLocaleString("sk-SK");data.approver="";
   requests.unshift(data);
  }
@@ -438,6 +477,7 @@ document.getElementById("requestForm").addEventListener("submit",e=>{
  form.reset();
  document.getElementById("ecv").value="";
  document.getElementById("orderNo").value="";
+ document.getElementById("duration").value="";
  alert("Žiadanka "+data.id+" bola "+(data.status==="Čaká na schválenie"?"uložená":"upravená")+".");
  sessionStorage.setItem("vv_auto_travel_draft",JSON.stringify({car:data.car,from:data.from,to:data.to,purpose:data.purpose,date:data.date,time:data.time}));
  if(confirm("Otvoriť teraz cestovný príkaz s prenesenými údajmi z autožiadanky?"))openTravelOrder();else showView("homeView");
@@ -453,14 +493,15 @@ function renderRequests(){
 }
 function detail(i){
  let r=requests[i],el=document.getElementById("requestDetail");
- const rows=[["Žiadateľ",r.requester],["Cestujúci",r.passengers],["Náklad",r.cargo],["Deň, hodina, miesto",`${r.date} ${r.time} · ${r.place}`],["Odkiaľ – kam",`${r.from} – ${r.to}`],["Ďalšie destinácie",r.destinations],["Meno vodiča",r.driverName],["Vodič sa hlási u",r.reportTo],["Telefón",r.phone],["Počet dní",r.duration],["Účel jazdy",r.purpose],["Vyúčtuje na vrub",r.charge||"GOS"],["Poznámka",r.notes],["EČV",r.ecv],["Číslo objednávky",r.orderNo]];
+ const rows=[["Žiadateľ",r.requester],["Cestujúci",r.passengers],["Náklad",r.cargo],["Pristavenie – vrátenie",`${r.date} – ${r.dateTo||r.date}`],["Počet dní",r.duration],["Deň, hodina, miesto",`${r.date} ${r.time} · ${r.place}`],["Odkiaľ – kam",`${r.from} – ${r.to}`],["Ďalšie destinácie",r.destinations],["Meno vodiča",r.driverName],["Vodič sa hlási u",r.reportTo],["Telefón",r.phone],["Počet dní",r.duration],["Účel jazdy",r.purpose],["Vyúčtuje na vrub",r.charge||"GOS"],["Poznámka",r.notes],["EČV",r.ecv],["Číslo objednávky",r.orderNo]];
  el.innerHTML=`<div class="card"><h2>Žiadanka ${esc(r.id)}</h2><div class="formgrid">${rows.map(([k,v])=>`<div><strong>${esc(k)}</strong><div>${esc(v)||"—"}</div></div>`).join("")}</div></div>`;
 }
 function editRequest(i){
  const r=requests[i];editingRequestId=r.id;
  showView("requestView");
- const ids=["car","orderNo","ecv","requester","passengers","cargo","date","time","place","from","to","destinations","reportTo","phone","duration","driverName","purpose","charge","notes","requesterSign"];
+ const ids=["car","orderNo","ecv","requester","passengers","cargo","date","dateTo","time","place","from","to","destinations","reportTo","phone","duration","driverName","purpose","charge","notes","requesterSign"];
  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=r[id]||""});
+ updateVehicleDays();
  document.querySelector("#requestForm button[type=submit]").textContent="Uložiť zmeny žiadanky";
 }
 function deleteRequest(i){
@@ -495,7 +536,7 @@ function printRequest(r){
    <div class="paper-meta"><div><b>Číslo objednávky žiadateľa</b>${escv(r.orderNo)}</div><div><b>Číslo objednávky útvaru dopravy</b></div></div>
   </div>
   <div class="paper-row">${field("Žiadateľ",r.requester)}${field("Mená cestujúcich *)",r.passengers)}</div>
-  <div class="paper-row">${field("Druh, hmotnosť a rozmer nákladu *)",r.cargo)}${field("Deň, hodina a miesto pristavenia",[r.date,r.time,r.place].filter(Boolean).join(" · "))}</div>
+  <div class="paper-row">${field("Druh, hmotnosť a rozmer nákladu *)",r.cargo)}${field("Pristavenie – vrátenie",[r.date,r.dateTo].filter(Boolean).join(" – ")+ (r.time?" · "+r.time:""))}</div>
   <div class="paper-row">${field("Odkiaľ – kam",[r.from,r.to].filter(Boolean).join(" – "))}${field("Vodič sa hlási u",r.reportTo)}</div>
   ${r.destinations?`<div class="paper-row">${field("Ďalšie destinácie / zastávky",r.destinations)}</div>`:""}
   <div class="paper-row">${field("telefón",r.phone)}${field("Vozidlo je požadované na",r.duration?`${r.duration} deň / dní`:"")}</div>
@@ -724,31 +765,82 @@ window.addEventListener("afterprint",()=>document.body.classList.remove("staff-p
 
 const gosStaffDirectory=[{"id": "gos01", "short": "Anežka Kleinová", "full": "Mgr. Anežka Kleinová", "department": "Riaditeľstvo", "role": "Riaditeľka / štatutárny orgán", "email": "anezka.kleinova@gos.sk", "phone": "0905 919 431", "access": "director"}, {"id": "gos02", "short": "Martina Huďová", "full": "Ing. Martina Huďová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Manažérka ekonomiky", "email": "martina.hudova@gos.sk", "phone": "0917 760 947", "access": "accountant"}, {"id": "gos03", "short": "Michaela Poláková", "full": "Mgr. Michaela Poláková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Personalistika, vedenie sekretariátu, registratúra", "email": "michaela.polakova@gos.sk", "phone": "0915 778 740", "access": "secretary"}, {"id": "gos04", "short": "Viera Szőllősová", "full": "Viera Szőllősová", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Referentka pokladne a správy majetku", "email": "viera.szollosova@gos.sk", "phone": "0917 760 947", "access": "employee"}, {"id": "gos05", "short": "Miroslava Malčeková", "full": "Miroslava Malčeková", "department": "Úsek ekonomicko-prevádzkovej činnosti", "role": "Upratovačka", "email": "", "phone": "", "access": "employee"}, {"id": "gos06", "short": "Tibor Szabó", "full": "Tibor Szabó", "department": "Úsek astronomickej činnosti", "role": "Manažér kultúry", "email": "tibor.szabo@gos.sk", "phone": "0918 244 901", "access": "employee"}, {"id": "gos07", "short": "Voľná pozícia – astronómia", "full": "Voľná pozícia – manažér/ka kultúry", "department": "Úsek astronomickej činnosti", "role": "Voľná pozícia", "email": "", "phone": "", "access": "disabled"}, {"id": "gos08", "short": "Mária Hlaváčová", "full": "Mgr. Mária Hlaváčová", "department": "Oddelenie kultúrno-osvetovej činnosti", "role": "Zástupkyňa riaditeľky, vedúca oddelenia, manažérka kultúry", "email": "maria.hlavacova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos09", "short": "Sandra Petríková", "full": "Mgr. art. Sandra Petríková", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažérka kultúry pre neprofesionálne umenie", "email": "sandra.petrikova@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos10", "short": "Martin Balog", "full": "Martin Balog", "department": "Úsek záujmovo-umeleckej činnosti", "role": "Manažér kultúry pre neprofesionálne umenie", "email": "martin.balog@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos11", "short": "Peter Novotný", "full": "Peter Novotný", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažér pre Remeselnícky inkubátor RINK", "email": "peter.novotny@gos.sk", "phone": "0918 566 491", "access": "employee"}, {"id": "gos12", "short": "Viktória Rigó", "full": "Bc. Viktória Rigó", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka pre menšinovú kultúru", "email": "viktoria.rigo@gos.sk", "phone": "0915 884 135", "access": "employee"}, {"id": "gos13", "short": "Renáta Kseničová", "full": "Bc. Renáta Kseničová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry", "email": "renata.ksenicova@gos.sk", "phone": "0917 419 259", "access": "employee"}, {"id": "gos14", "short": "Silvia Makarová", "full": "Silvia Makarová", "department": "Úsek tradičnej ľudovej kultúry", "role": "Manažérka kultúry – recepcia, lektorovanie, vzdelávanie a predaj", "email": "silvia.makarova@gos.sk", "phone": "0917 419 259", "access": "employee"}];
 let loggedInStaff=null;
-function initStaffLogin(){
- const sel=document.getElementById("loginStaffSelect");
- gosStaffDirectory.filter(x=>x.access!=="disabled").forEach(x=>{const o=document.createElement("option");o.value=x.id;o.textContent=x.full+" – "+x.department;sel.appendChild(o)});
- const active=localStorage.getItem("vv_active_staff");
- if(active){const found=gosStaffDirectory.find(x=>x.id===active);if(found){loggedInStaff=found;document.getElementById("loginGate").style.display="none";applyStaffProfile();}}
-}
-function demoLogin(){
- const id=document.getElementById("loginStaffSelect").value;
- loggedInStaff=gosStaffDirectory.find(x=>x.id===id);
- if(!loggedInStaff){alert("Vyberte svoje meno.");return}
- if(document.getElementById("loginPassword").value!=="osvetarv"){alert("Nesprávne heslo.");return}
+function initStaffLogin(){}
+async function demoLogin(){
+ const email=(document.getElementById("loginEmail").value||"").trim().toLowerCase();
+ const password=document.getElementById("loginPassword").value||"";
+ const errorEl=document.getElementById("loginError");
+ errorEl.textContent="";
+ if(!email || !password){errorEl.textContent="Zadajte e-mail a heslo.";return}
+ const {data:authData,error:authError}=await supabaseClient.auth.signInWithPassword({email,password});
+ if(authError){errorEl.textContent="Prihlásenie sa nepodarilo. Skontrolujte e-mail a heslo.";return}
+ const {data:profile,error:profileError}=await supabaseClient
+   .from("employees").select("id,full_name,email,role,position,is_active")
+   .eq("id",authData.user.id).maybeSingle();
+ if(profileError || !profile || !profile.is_active){
+   await supabaseClient.auth.signOut();
+   errorEl.textContent="Účet nemá aktívny zamestnanecký profil. Kontaktujte administrátora.";
+   return;
+ }
+ const directoryEntry=gosStaffDirectory.find(x=>(x.email||"").toLowerCase()===email);
+ loggedInStaff={
+   ...(directoryEntry||{}),
+   id:profile.id,
+   full:profile.full_name,
+   email:profile.email,
+   role:profile.role,
+   access:profile.role==="admin"?"admin":profile.role==="director"?"director":profile.role
+ };
+ currentRole=profile.role;
+ try{await vvLoadSnapshot(profile.id);}catch(syncErr){errorEl.textContent="Prihlásenie prebehlo, ale cloud dáta sa nenačítali: "+(syncErr.message||syncErr);return;}
  document.getElementById("loginGate").style.display="none";
- localStorage.setItem("vv_active_staff",loggedInStaff.id);
+ document.getElementById("adminCreatePanel").classList.toggle("hidden",profile.role!=="admin");
+ document.getElementById("roleLabel").textContent="Prihlásený: "+profile.full_name+" · "+profile.role;
+ const roleSwitch=document.getElementById("roleSwitch");
+ if(roleSwitch){roleSwitch.classList.add("hidden");}
  applyStaffProfile();
  const accountantButton=document.getElementById("accountantTravelButton");
- if(accountantButton)accountantButton.style.display=loggedInStaff.access==="accountant"?"inline-flex":"none";
+ if(accountantButton)accountantButton.style.display=["admin","director","accountant"].includes(profile.role)?"inline-flex":"none";
  if(typeof updateVacationBalance==="function")updateVacationBalance();
 }
+async function createEmployeeAccounts(){
+ const btn=document.getElementById("createEmployeesButton"),status=document.getElementById("createEmployeesStatus"),out=document.getElementById("createdEmployeesResults");
+ if(loggedInStaff?.role!=="admin"){alert("Túto akciu môže vykonať iba administrátor.");return}
+ if(!confirm("Vytvoriť prihlasovacie účty pre zamestnancov, ktorí ich ešte nemajú?"))return;
+ btn.disabled=true;status.textContent="Vytváram účty…";out.innerHTML="";
+ try{
+  const {data,error}=await supabaseClient.functions.invoke("create-employees",{body:{}});
+  if(error)throw error;
+  if(!data || data.error)throw new Error(data?.error||"Funkcia nevrátila platnú odpoveď.");
+  const created=Array.isArray(data.created)?data.created:(Array.isArray(data.credentials)?data.credentials:[]);
+  const existing=Array.isArray(data.existing)?data.existing:[];
+  status.textContent=`Hotovo. Nové účty: ${created.length}. Už existujúce: ${existing.length}.`;
+  if(created.length){
+   const rows=created.map(x=>`<tr><td>${esc(x.full_name||x.name||"")}</td><td>${esc(x.email||"")}</td><td><code>${esc(x.password||x.temporary_password||"")}</code></td></tr>`).join("");
+   out.innerHTML=`<h3>Nové prihlasovacie údaje – uložte si ich teraz</h3><div style="overflow-x:auto"><table><thead><tr><th>Meno</th><th>E-mail</th><th>Dočasné heslo</th></tr></thead><tbody>${rows}</tbody></table></div><p class="small">Tieto heslá sa zobrazia iba v tejto odpovedi. Bezpečne ich odovzdajte jednotlivým zamestnancom.</p><button class="secondary" type="button" onclick="copyCreatedCredentials()">Kopírovať prihlasovacie údaje</button>`;
+   window.lastCreatedCredentials=created.map(x=>`${x.full_name||x.name||""}	${x.email||""}	${x.password||x.temporary_password||""}`).join("\n");
+  }else{
+   out.innerHTML="<p>Funkcia nevrátila nové heslá. Účty môžu už existovať; existujúcim účtom sa heslá nemenia.</p>";
+  }
+ }catch(err){
+  console.error(err);status.textContent="Nepodarilo sa vytvoriť účty: "+(err.message||String(err))+". Skontrolujte nasadenie funkcie a jej tajný kľúč v Supabase.";
+ }finally{btn.disabled=false;}
+}
+function copyCreatedCredentials(){if(window.lastCreatedCredentials)navigator.clipboard.writeText(window.lastCreatedCredentials).then(()=>alert("Prihlasovacie údaje sú skopírované."),()=>alert("Kopírovanie sa nepodarilo. Označte a skopírujte tabuľku ručne."));}
 function applyStaffProfile(){
  if(!loggedInStaff)return;
  const set=(id,val)=>{const el=document.getElementById(id);if(el && (!el.value || id==="requester" || id==="requesterSign"))el.value=val||""};
- set("requester",loggedInStaff.full);set("requesterSign",loggedInStaff.full);set("requesterName",loggedInStaff.full);set("employeeName",loggedInStaff.full);set("orderRequester",loggedInStaff.full);
+ set("requester",loggedInStaff.full);
+ set("requesterSign",loggedInStaff.full);
+ set("requesterName",loggedInStaff.full);
+ set("employeeName",loggedInStaff.full);
+ set("orderRequester",loggedInStaff.full);
 }
-function logoutStaff(){loggedInStaff=null;localStorage.removeItem("vv_active_staff");document.getElementById("loginGate").style.display="flex";document.getElementById("loginStaffSelect").value="";}
-function requireStaffProfile(){if(!loggedInStaff){document.getElementById("loginGate").style.display="flex";return false}return true}
+async function logoutStaff(){await supabaseClient.auth.signOut();loggedInStaff=null;document.getElementById("adminCreatePanel").classList.add("hidden");document.getElementById("loginGate").style.display="flex";document.getElementById("loginEmail").value="";document.getElementById("loginPassword").value="";document.getElementById("roleSwitch").classList.remove("hidden");}
+function requireStaffProfile(){
+ if(!loggedInStaff){document.getElementById("loginGate").style.display="flex";return false}
+ return true;
+}
 const oldOpenStaffForm=window.openStaffForm;
 window.openStaffForm=function(type,id=null){
  if(!requireStaffProfile())return;
@@ -763,6 +855,27 @@ window.showView=function(id){
  if(id==="requestView" || id==="orderView")applyStaffProfile();
 };
 initStaffLogin();
+(async()=>{
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ if(session?.user?.email){
+   document.getElementById("loginEmail").value=session.user.email;
+   // Session is restored; require explicit password re-entry only if profile cannot be loaded.
+   const {data:profile}=await supabaseClient.from("employees").select("id,full_name,email,role,position,is_active").eq("id",session.user.id).maybeSingle();
+   if(profile?.is_active){
+     try{await vvLoadSnapshot(profile.id);}catch(syncErr){console.error("Cloud snapshot load failed",syncErr);}
+     const entry=gosStaffDirectory.find(x=>(x.email||"").toLowerCase()===profile.email.toLowerCase());
+     loggedInStaff={...(entry||{}),id:profile.id,full:profile.full_name,email:profile.email,role:profile.role,access:profile.role};
+     currentRole=profile.role;
+     document.getElementById("loginGate").style.display="none";
+     document.getElementById("adminCreatePanel").classList.toggle("hidden",profile.role!=="admin");
+     document.getElementById("roleLabel").textContent="Prihlásený: "+profile.full_name+" · "+profile.role;
+     document.getElementById("roleSwitch").classList.add("hidden");
+     applyStaffProfile();
+     const b=document.getElementById("accountantTravelButton");
+     if(b)b.style.display=["admin","director","accountant"].includes(profile.role)?"inline-flex":"none";
+   }
+ }
+})();
 
 
 // Cestovné príkazy podľa dodanej prednej a zadnej strany tlačiva.
