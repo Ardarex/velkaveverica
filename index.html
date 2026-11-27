@@ -238,11 +238,11 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
   <h2>Predmet objednávky</h2>
   <div class="field"><label for="orderDescription">Opis / účel objednávky *</label><textarea id="orderDescription" required placeholder="Napr. Nákup kancelárskych potrieb..."></textarea></div>
-  <table class="order-lines"><thead><tr><th>Por.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH (€)</th><th>Cena s DPH (€)</th></tr></thead>
+  <table class="order-lines"><thead><tr><th>Por.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH (€)</th><th>Jedn. cena s DPH (€)</th></tr></thead>
    <tbody id="orderItems">
-    <tr><td>1.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01" value="1"></td><td><input class="item-price" type="number" min="0" step="0.01" placeholder="0,00"></td><td class="item-total">0,00 €</td></tr>
-    <tr><td>2.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01" value="1"></td><td><input class="item-price" type="number" min="0" step="0.01" placeholder="0,00"></td><td class="item-total">0,00 €</td></tr>
-    <tr><td>3.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01" value="1"></td><td><input class="item-price" type="number" min="0" step="0.01" placeholder="0,00"></td><td class="item-total">0,00 €</td></tr>
+    <tr><td>1.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01" value="1"></td><td><input class="item-net" type="number" min="0" step="0.01" placeholder="0,00"></td><td><input class="item-gross" type="number" min="0" step="0.01" placeholder="0,00"></td></tr>
+    <tr><td>2.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01" value="1"></td><td><input class="item-net" type="number" min="0" step="0.01" placeholder="0,00"></td><td><input class="item-gross" type="number" min="0" step="0.01" placeholder="0,00"></td></tr>
+    <tr><td>3.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01" value="1"></td><td><input class="item-net" type="number" min="0" step="0.01" placeholder="0,00"></td><td><input class="item-gross" type="number" min="0" step="0.01" placeholder="0,00"></td></tr>
    </tbody>
   </table>
   <div class="formgrid">
@@ -572,14 +572,23 @@ document.getElementById("supplier").addEventListener("change",e=>{
 document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
 function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
 fillOrderRequester();
-function calcOrderTotal(){
- let total=0,rate=parseFloat(document.getElementById("vatRate").value)||0,mode=document.getElementById("priceMode")?.value||"net";
- document.querySelectorAll("#orderItems tr").forEach(tr=>{let q=parseFloat(tr.querySelector(".item-qty").value)||0,p=parseFloat(tr.querySelector(".item-price").value)||0;let gross=mode==="gross"?p:p*(1+rate/100);total+=q*gross;tr.querySelector(".item-total").textContent=(q*gross).toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";});
+function fmtMoney(n){return (Number(n)||0).toFixed(2)}
+function calcOrderTotal(changedInput){
+ const rate=(Number(document.getElementById("vatRate").value)||0)/100;let total=0;
+ document.querySelectorAll("#orderItems tr").forEach(tr=>{
+  const netEl=tr.querySelector(".item-net"),grossEl=tr.querySelector(".item-gross"),qty=Number(tr.querySelector(".item-qty").value)||0;
+  let net=Number(netEl.value)||0,gross=Number(grossEl.value)||0;
+  if(changedInput===netEl){gross=net*(1+rate);grossEl.value=netEl.value===""?"":fmtMoney(gross)}
+  else if(changedInput===grossEl){net=rate===-1?0:gross/(1+rate);netEl.value=grossEl.value===""?"":fmtMoney(net)}
+  else if(netEl.value!==""){gross=net*(1+rate);grossEl.value=fmtMoney(gross)}
+  else if(grossEl.value!==""){net=gross/(1+rate);netEl.value=fmtMoney(net)}
+  total+=qty*gross;
+ });
  document.getElementById("orderTotal").textContent=total.toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";return total;
 }
-document.getElementById("orderItems").addEventListener("input",calcOrderTotal);
-document.getElementById("vatRate").addEventListener("change",calcOrderTotal);
-document.getElementById("priceMode")?.addEventListener("change",calcOrderTotal);
+document.getElementById("orderItems").addEventListener("input",e=>{if(e.target.matches(".item-net,.item-gross"))calcOrderTotal(e.target);else calcOrderTotal()});
+document.getElementById("orderItems").addEventListener("change",e=>{if(e.target.matches(".item-net,.item-gross"))calcOrderTotal(e.target)});
+document.getElementById("vatRate").addEventListener("change",()=>calcOrderTotal());
 document.getElementById("orderForm").addEventListener("reset",()=>setTimeout(()=>{document.getElementById("supplier").dispatchEvent(new Event("change"));calcOrderTotal()},0));
 async function vvRefreshSharedOrders(){
  if(!loggedInStaff?.id)return;
@@ -589,16 +598,27 @@ async function vvRefreshSharedOrders(){
 }
 async function vvRefreshSharedSuppliers(){
  if(!loggedInStaff?.id)return;
+ // Zachovaj starší lokálny register a doplň prednastavených dodávateľov do spoločnej DB.
+ let local=[];try{local=JSON.parse(localStorage.getItem("vv_suppliers")||"[]")||[]}catch{}
+ const {data:current,error:readError}=await supabaseClient.from("gos_suppliers").select("*");
+ if(readError){console.error(readError);alert("Register dodávateľov sa nepodarilo načítať: "+readError.message);return;}
+ const merged=[...(typeof seedSuppliers!=="undefined"?seedSuppliers:[]),...local];
+ const known=new Set((current||[]).map(r=>(r.name||"").trim().toLowerCase()));
+ for(const v of merged){const key=(v.name||"").trim().toLowerCase();if(!key||known.has(key))continue;
+  const {error}=await supabaseClient.from("gos_suppliers").insert({name:v.name,address:v.address||"",ico:v.ico||"",dic:v.dic||"",icdph:v.icdph||"",source:v.source||"",created_by:loggedInStaff.id});
+  if(error && !/duplicate|unique/i.test(error.message)){console.error("Dodávateľ sa nepodaril preniesť:",v.name,error.message);}
+  known.add(key);
+ }
  const {data,error}=await supabaseClient.from("gos_suppliers").select("*").order("name");
  if(error){console.error(error);return;}
  suppliers=(data||[]).map(r=>({id:r.id,name:r.name,address:r.address,ico:r.ico,dic:r.dic,icdph:r.icdph,source:r.source,_db:true}));
- refreshSupplierOptions();renderSuppliers();
+ localStorage.setItem("vv_suppliers",JSON.stringify(suppliers));refreshSupplierOptions();renderSuppliers();
 }
 document.getElementById("orderForm").addEventListener("submit",async e=>{
  e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;
  if(!loggedInStaff?.id){alert("Najprv sa prihláste.");return;}
- const rate=Number(document.getElementById("vatRate").value)||0,mode=document.getElementById("priceMode").value;
- const items=[...document.querySelectorAll("#orderItems tr")].map(tr=>{const qty=Number(tr.querySelector(".item-qty").value)||0,entered=Number(tr.querySelector(".item-price").value)||0;const net=mode==="gross"?entered/(1+rate/100):entered;const gross=mode==="gross"?entered:entered*(1+rate/100);return {name:tr.querySelector(".item-name").value.trim(),qty,priceNet:net,priceGross:gross,price:net,rate};}).filter(x=>x.name);
+ const rate=Number(document.getElementById("vatRate").value)||0;
+ const items=[...document.querySelectorAll("#orderItems tr")].map(tr=>{const qty=Number(tr.querySelector(".item-qty").value)||0,net=Number(tr.querySelector(".item-net").value)||0,gross=Number(tr.querySelector(".item-gross").value)||net*(1+rate/100);return {name:tr.querySelector(".item-name").value.trim(),qty,priceNet:net,priceGross:gross,price:net,rate};}).filter(x=>x.name);
  const existing=editingOrderId?orders.find(x=>x.id===editingOrderId):null;
  const o={requester:existing?.requester||loggedInStaff.full||loggedInStaff.short||"",date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:document.getElementById("supplierName").value,address:document.getElementById("supplierAddress").value,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,via:document.getElementById("orderVia").value,description:document.getElementById("orderDescription").value,items,total:calcOrderTotal(),delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value};
  let saved;
@@ -611,7 +631,7 @@ function fillOrderRequester(){const el=document.getElementById("orderRequester")
 fillOrderRequester();
 
 function renderOrders(){let el=document.getElementById("ordersList");if(!orders.length){el.innerHTML='<div class="empty">Zatiaľ nie sú vytvorené objednávky.</div>';return;}el.innerHTML='<table><thead><tr><th>Číslo</th><th>Dátum</th><th>Vystavil/a</th><th>Dodávateľ</th><th>Cena s DPH</th><th>Akcie</th></tr></thead><tbody>'+orders.map((o,i)=>`<tr><td>${esc(o.number)}</td><td>${esc(o.date)}</td><td>${esc(o.requester||"")}</td><td>${esc(o.supplier)}</td><td>${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td><button class="secondary" onclick="showOrderPrint(orders[${i}])">Tlačiť</button> <button class="secondary" onclick="editOrder(${i})">Upraviť</button> <button class="danger" onclick="deleteOrder(${i})">Vymazať</button></td></tr>`).join("")+'</tbody></table>';}
-function editOrder(i){const o=orders[i];editingOrderId=o.id;showView("orderView");const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};set("orderRequester",o.requester);set("supplier","manual");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);set("orderVia",o.via);set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("vatRate",o.items?.[0]?.rate??23);set("priceMode","net");const body=document.getElementById("orderItems");body.innerHTML="";(o.items?.length?o.items:[{name:"",qty:1,price:0,rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-price" type="number" min="0" step="0.01"></td><td class="item-total">0,00 €</td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-price").value=x.priceNet??x.price??0;body.appendChild(tr)});calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";}
+function editOrder(i){const o=orders[i];editingOrderId=o.id;showView("orderView");const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};set("orderRequester",o.requester);set("supplier","manual");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);set("orderVia",o.via);set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("vatRate",o.items?.[0]?.rate??23);set("priceMode","net");const body=document.getElementById("orderItems");body.innerHTML="";(o.items?.length?o.items:[{name:"",qty:1,price:0,rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-net" type="number" min="0" step="0.01"></td><td><input class="item-gross" type="number" min="0" step="0.01"></td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-net").value=x.priceNet??x.price??0;tr.querySelector(".item-gross").value=x.priceGross??(Number(x.priceNet??x.price??0)*(1+(Number(x.rate)||0)/100));body.appendChild(tr)});calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";}
 async function deleteOrder(i){const o=orders[i];if(!confirm("Naozaj chcete natrvalo vymazať túto objednávku?"))return;const {error}=await supabaseClient.from("gos_orders").delete().eq("id",o.id);if(error){alert("Vymazanie zlyhalo: "+error.message);return;}await vvRefreshSharedOrders();}
 function clearOrders(){alert("Hromadné mazanie objednávok je z bezpečnostných dôvodov vypnuté. Vymažte konkrétnu objednávku.");}
 
