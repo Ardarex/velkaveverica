@@ -81,9 +81,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
  body.print-order .no-print{display:none!important}
  body.print-order #orderPrintArea{width:100%;display:block!important}
  body.print-order .order-paper{page-break-after:always;break-after:page}
- body.print-order .control-paper{page-break-before:always;break-before:page;border:0!important;max-width:none!important;margin:0!important;padding:8mm!important}
- body.print-order .control-paper table td,body.print-order .control-paper table th{font-size:10pt;padding:8px}
- @page{size:A4 portrait;margin:12mm}
+  @page{size:A4 portrait;margin:12mm}
 }
 
 .data-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
@@ -235,6 +233,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
    <div class="field"><label for="supplierIco">IČO</label><input id="supplierIco"></div>
    <div class="field"><label for="supplierDic">DIČ</label><input id="supplierDic"></div>
    <div class="field"><label for="supplierIcDph">IČ DPH</label><input id="supplierIcDph"></div>
+   <div class="field"><label for="orderVia">Cez koho / sprostredkovateľ</label><input id="orderVia" placeholder="Napr. RINK"></div>
   </div>
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
   <h2>Predmet objednávky</h2>
@@ -251,9 +250,9 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
    <div class="field"><label for="deliveryMethod">Spôsob dodávky</label><input id="deliveryMethod" placeholder="Napr. doručenie na adresu"></div>
    <div class="field"><label for="orderPlace">Miesto vystavenia</label><input id="orderPlace" value="Rožňava"></div>
    <div class="field"><label for="orderDate">Dátum objednávky</label><input id="orderDate" type="date"></div>
-   <div class="field"><label for="orderNumberOverride">Číslo objednávky (možno upraviť)</label><input id="orderNumberOverride" placeholder="Nechajte prázdne – pridelí sa automaticky"></div>
+   <div class="field"><label>Číslo objednávky</label><input value="Pridelí sa automaticky od 2026/191" readonly></div>
   </div>
-  <div class="field" style="max-width:220px"><label for="vatRate">Sadzba DPH</label><select id="vatRate"><option value="23">23 %</option><option value="19">19 %</option><option value="5">5 %</option><option value="0">0 %</option></select></div><p><strong>Celková cena s DPH: <span id="orderTotal">0,00 €</span></strong></p>
+  <div class="field" style="max-width:220px"><label for="priceMode">Zadávaná cena</label><select id="priceMode"><option value="net">Zadávam cenu bez DPH</option><option value="gross">Zadávam cenu s DPH</option></select></div><div class="field" style="max-width:220px"><label for="vatRate">Sadzba DPH</label><select id="vatRate"><option value="23">23 %</option><option value="19">19 %</option><option value="5">5 %</option><option value="0">0 %</option></select></div><p><strong>Celková cena s DPH: <span id="orderTotal">0,00 €</span></strong></p>
   <div class="actions"><button class="primary" type="submit">Uložiť objednávku a prideliť číslo</button><button class="secondary" type="reset">Vymazať formulár</button></div>
  </form>
 </section>
@@ -574,52 +573,48 @@ document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
 function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
 fillOrderRequester();
 function calcOrderTotal(){
- let total=0,rate=parseFloat(document.getElementById("vatRate").value)||0;
- document.querySelectorAll("#orderItems tr").forEach(tr=>{
-  let q=parseFloat(tr.querySelector(".item-qty").value)||0,p=parseFloat(tr.querySelector(".item-price").value)||0;
-  let line=q*p*(1+rate/100);total+=line;
-  tr.querySelector(".item-total").textContent=line.toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
- });
- document.getElementById("orderTotal").textContent=total.toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
- return total;
+ let total=0,rate=parseFloat(document.getElementById("vatRate").value)||0,mode=document.getElementById("priceMode")?.value||"net";
+ document.querySelectorAll("#orderItems tr").forEach(tr=>{let q=parseFloat(tr.querySelector(".item-qty").value)||0,p=parseFloat(tr.querySelector(".item-price").value)||0;let gross=mode==="gross"?p:p*(1+rate/100);total+=q*gross;tr.querySelector(".item-total").textContent=(q*gross).toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";});
+ document.getElementById("orderTotal").textContent=total.toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";return total;
 }
 document.getElementById("orderItems").addEventListener("input",calcOrderTotal);
 document.getElementById("vatRate").addEventListener("change",calcOrderTotal);
+document.getElementById("priceMode")?.addEventListener("change",calcOrderTotal);
 document.getElementById("orderForm").addEventListener("reset",()=>setTimeout(()=>{document.getElementById("supplier").dispatchEvent(new Event("change"));calcOrderTotal()},0));
-document.getElementById("orderForm").addEventListener("submit",e=>{
+async function vvRefreshSharedOrders(){
+ if(!loggedInStaff?.id)return;
+ const {data,error}=await supabaseClient.from("gos_orders").select("*").order("created_at",{ascending:false});
+ if(error){console.error(error);alert("Spoločné objednávky sa nepodarilo načítať: "+error.message);return;}
+ orders=(data||[]).map(r=>({...r.data,id:r.id,number:r.order_number,requester:r.created_by_name,created:r.created_at,_db:true}));localStorage.setItem("vv_orders",JSON.stringify(orders));renderOrders();
+}
+async function vvRefreshSharedSuppliers(){
+ if(!loggedInStaff?.id)return;
+ const {data,error}=await supabaseClient.from("gos_suppliers").select("*").order("name");
+ if(error){console.error(error);return;}
+ suppliers=(data||[]).map(r=>({id:r.id,name:r.name,address:r.address,ico:r.ico,dic:r.dic,icdph:r.icdph,source:r.source,_db:true}));
+ refreshSupplierOptions();renderSuppliers();
+}
+document.getElementById("orderForm").addEventListener("submit",async e=>{
  e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;
- let rate=parseFloat(document.getElementById("vatRate").value)||0;
- let items=[...document.querySelectorAll("#orderItems tr")].map(tr=>({name:tr.querySelector(".item-name").value.trim(),qty:tr.querySelector(".item-qty").value,price:tr.querySelector(".item-price").value,rate})).filter(x=>x.name);
- let existing=editingOrderId?orders.find(x=>x.id===editingOrderId):null;
- let manualNo=document.getElementById("orderNumberOverride").value.trim();
- let n=parseInt(localStorage.getItem("vv_order_seq")||"162",10)+1;
- let requester=loggedInStaff?.full||loggedInStaff?.short||"";let o={...(existing||{}),id:existing?.id||("O-"+Date.now()),requester,number:manualNo||existing?.number||(new Date().getFullYear()+"/"+n),date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:document.getElementById("supplierName").value,address:document.getElementById("supplierAddress").value,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,description:document.getElementById("orderDescription").value,items,total:calcOrderTotal(),delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value,created:existing?.created||new Date().toLocaleString("sk-SK")};
- if(!existing&&!manualNo)localStorage.setItem("vv_order_seq",String(n));
- if(existing){orders[orders.findIndex(x=>x.id===existing.id)]=o;}else orders.unshift(o);
- localStorage.setItem("vv_orders",JSON.stringify(orders));editingOrderId=null;
- alert("Objednávka "+o.number+" bola "+(existing?"upravená":"uložená")+".");
- form.reset();document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
-function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
-fillOrderRequester();document.getElementById("orderNumberOverride").value="";showOrderPrint(o);
+ if(!loggedInStaff?.id){alert("Najprv sa prihláste.");return;}
+ const rate=Number(document.getElementById("vatRate").value)||0,mode=document.getElementById("priceMode").value;
+ const items=[...document.querySelectorAll("#orderItems tr")].map(tr=>{const qty=Number(tr.querySelector(".item-qty").value)||0,entered=Number(tr.querySelector(".item-price").value)||0;const net=mode==="gross"?entered/(1+rate/100):entered;const gross=mode==="gross"?entered:entered*(1+rate/100);return {name:tr.querySelector(".item-name").value.trim(),qty,priceNet:net,priceGross:gross,price:net,rate};}).filter(x=>x.name);
+ const existing=editingOrderId?orders.find(x=>x.id===editingOrderId):null;
+ const o={requester:existing?.requester||loggedInStaff.full||loggedInStaff.short||"",date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:document.getElementById("supplierName").value,address:document.getElementById("supplierAddress").value,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,via:document.getElementById("orderVia").value,description:document.getElementById("orderDescription").value,items,total:calcOrderTotal(),delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value};
+ let saved;
+ if(existing?._db){const {data,error}=await supabaseClient.from("gos_orders").update({data:o,updated_at:new Date().toISOString()}).eq("id",existing.id).select().single();if(error){alert("Uloženie zlyhalo: "+error.message);return;}saved={...o,id:data.id,number:data.order_number,created_by_name:data.created_by_name,_db:true};}
+ else if(existing){const {data,error}=await supabaseClient.from("gos_orders").update({data:o,updated_at:new Date().toISOString()}).eq("id",existing.id).select().maybeSingle();if(error){alert("Uloženie zlyhalo: "+error.message);return;}saved={...o,id:existing.id,number:existing.number,_db:true};}
+ else {const {data,error}=await supabaseClient.rpc("gos_create_order",{p_data:o});if(error){alert("Objednávku sa nepodarilo uložiť: "+error.message);return;}const result=Array.isArray(data)?data[0]:data;saved={...o,id:result.id,number:result.order_number,_db:true};}
+ editingOrderId=null;await vvRefreshSharedOrders();form.reset();document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);fillOrderRequester();showOrderPrint(saved);
 });
+function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
+fillOrderRequester();
 
-function renderOrders(){
- let el=document.getElementById("ordersList");
- if(!orders.length){el.innerHTML='<div class="empty">Zatiaľ nie sú vytvorené objednávky.</div>';return}
- el.innerHTML='<table><thead><tr><th>Číslo objednávky</th><th>Dátum</th><th>Dodávateľ</th><th>Cena s DPH</th><th>Akcie</th></tr></thead><tbody>'+orders.map((o,i)=>`<tr><td>${esc(o.number)}</td><td>${esc(o.date)}</td><td>${esc(o.supplier)}</td><td>${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td><button class="secondary" onclick="showOrderPrint(orders[${i}])">Zobraziť / tlačiť</button> <button class="secondary" onclick="editOrder(${i})">Upraviť</button> <button class="danger" onclick="deleteOrder(${i})">Vymazať</button></td></tr>`).join("")+'</tbody></table>';
-}
-function editOrder(i){
- const o=orders[i];editingOrderId=o.id;showView("orderView");
- const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};
- set("orderRequester",o.requester||loggedInStaff?.full||"");set("supplier","custom");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);
- set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("orderNumberOverride",o.number);
- set("vatRate",o.items?.[0]?.rate??23);
- const body=document.getElementById("orderItems");body.innerHTML="";
- (o.items?.length?o.items:[{name:"",qty:1,price:"",rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name" placeholder="Názov tovaru alebo služby"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-price" type="number" min="0" step="0.01"></td><td class="item-total">0,00 €</td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-price").value=x.price||"";body.appendChild(tr)});
- calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";
-}
-function deleteOrder(i){if(!confirm("Naozaj chcete natrvalo vymazať túto objednávku?"))return;orders.splice(i,1);localStorage.setItem("vv_orders",JSON.stringify(orders));renderOrders();}
-function clearOrders(){if(!confirm("Naozaj chcete vymazať VŠETKY objednávky? Túto akciu nemožno vrátiť."))return;orders=[];localStorage.setItem("vv_orders","[]");renderOrders();}
+function renderOrders(){let el=document.getElementById("ordersList");if(!orders.length){el.innerHTML='<div class="empty">Zatiaľ nie sú vytvorené objednávky.</div>';return;}el.innerHTML='<table><thead><tr><th>Číslo</th><th>Dátum</th><th>Vystavil/a</th><th>Dodávateľ</th><th>Cena s DPH</th><th>Akcie</th></tr></thead><tbody>'+orders.map((o,i)=>`<tr><td>${esc(o.number)}</td><td>${esc(o.date)}</td><td>${esc(o.requester||"")}</td><td>${esc(o.supplier)}</td><td>${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td><button class="secondary" onclick="showOrderPrint(orders[${i}])">Tlačiť</button> <button class="secondary" onclick="editOrder(${i})">Upraviť</button> <button class="danger" onclick="deleteOrder(${i})">Vymazať</button></td></tr>`).join("")+'</tbody></table>';}
+function editOrder(i){const o=orders[i];editingOrderId=o.id;showView("orderView");const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};set("orderRequester",o.requester);set("supplier","manual");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);set("orderVia",o.via);set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("vatRate",o.items?.[0]?.rate??23);set("priceMode","net");const body=document.getElementById("orderItems");body.innerHTML="";(o.items?.length?o.items:[{name:"",qty:1,price:0,rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-price" type="number" min="0" step="0.01"></td><td class="item-total">0,00 €</td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-price").value=x.priceNet??x.price??0;body.appendChild(tr)});calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";}
+async function deleteOrder(i){const o=orders[i];if(!confirm("Naozaj chcete natrvalo vymazať túto objednávku?"))return;const {error}=await supabaseClient.from("gos_orders").delete().eq("id",o.id);if(error){alert("Vymazanie zlyhalo: "+error.message);return;}await vvRefreshSharedOrders();}
+function clearOrders(){alert("Hromadné mazanie objednávok je z bezpečnostných dôvodov vypnuté. Vymažte konkrétnu objednávku.");}
+
 function exportAllData(){
  const payload={version:1,exportedAt:new Date().toISOString(),requests,orders,orderSequence:localStorage.getItem("vv_order_seq")||"162"};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="velka-veverica-zaloha-vsetko.json";a.click();URL.revokeObjectURL(url);
@@ -632,24 +627,9 @@ function importAllData(event){
 }
 
 function showOrderPrint(o){
- const items=o.items.map((x,i)=>`<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td>${esc(x.qty)}</td><td>${Number(x.price||0).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td>${(Number(x.qty||0)*Number(x.price||0)*(1+(Number(x.rate)||0)/100)).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td></tr>`).join("");
- document.getElementById("orderPrintArea").innerHTML=`<div class="order-paper"><div style="display:flex;justify-content:space-between;gap:20px"><div><b>Odberateľ:</b><br>Gemerské osvetové stredisko<br>Betliarska 8<br>048 01 Rožňava<br>IČO: 31297781<br>DIČ: 2021452400<br><br>Objednávku vystavil/a: ${esc(o.requester||"")}<br>Kontakt: 0915 778 740</div><div><h2>OBJEDNÁVKA č.: ${esc(o.number)}</h2><p>v ${esc(o.place)} dňa: ${esc(o.date)}</p><b>Dodávateľ:</b><br>${esc(o.supplier)}<br>${esc(o.address)}<br>IČO: ${esc(o.ico)}<br>DIČ: ${esc(o.dic)}<br>IČ DPH: ${esc(o.icdph)}</div></div><p><b>Predmet objednávky:</b><br>${esc(o.description)}</p><table><thead><tr><th>Por. č.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH</th><th>Cena s DPH</th></tr></thead><tbody>${items||'<tr><td>1.</td><td colspan="4">Položky budú doplnené podľa opisu objednávky.</td></tr>'}</tbody></table><h3 style="text-align:right">Celková cena s DPH: ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</h3><p>Dodacia lehota: ${esc(o.delivery)}<br>Spôsob dodávky: ${esc(o.method)}</p><div style="margin-top:45px;border-top:1px solid #777;padding-top:8px">Pečiatka a podpis objednávateľa</div><p class="small">Vytvorené v systéme VEĽKÁ VEVERICA · číslo ${esc(o.number)}</p></div>
- <div class="control-paper"><h2>KONTROLNÝ LIST K OBJEDNÁVKE</h2><p class="control-sub">Gemerské osvetové stredisko · interná kontrola pred spracovaním objednávky</p>
- <div class="control-meta"><div><b>Číslo objednávky:</b> ${esc(o.number)}</div><div><b>Dátum:</b> ${esc(o.date)}</div><div><b>Dodávateľ:</b> ${esc(o.supplier)}</div><div><b>IČO:</b> ${esc(o.ico)||" "}</div><div style="grid-column:1/-1"><b>Predmet:</b> ${esc(o.description)}</div><div><b>Celková cena s DPH:</b> ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</div><div><b>Kontrolu vykonal/a:</b> </div></div>
- <table><thead><tr><th style="width:9%">Splnené</th><th>Kontrolná položka</th><th style="width:25%">Poznámka</th></tr></thead><tbody>
- <tr><td>☐ Áno ☐ Nie</td><td>Údaje dodávateľa sú skontrolované podľa podkladu.</td><td></td></tr>
- <tr><td>☐ Áno ☐ Nie</td><td>Predmet a rozsah objednávky sú zrozumiteľne uvedené.</td><td></td></tr>
- <tr><td>☐ Áno ☐ Nie</td><td>Množstvo a jednotkové ceny sú skontrolované.</td><td></td></tr>
- <tr><td>☐ Áno ☐ Nie</td><td>Celková cena a DPH sú skontrolované.</td><td></td></tr>
- <tr><td>☐ Áno ☐ Nie</td><td>Finančné krytie / rozpočtová položka je overená.</td><td></td></tr>
- <tr><td>☐ Áno ☐ Nie</td><td>Podklady k objednávke (ponuka, požiadavka alebo iný doklad) sú priložené.</td><td></td></tr>
- <tr><td>☐ Áno ☐ Nie</td><td>Objednávka je pripravená na schválenie / podpis.</td><td></td></tr>
- </tbody></table>
- <p><b>Zistené nedostatky / poznámky:</b></p><div style="height:35px;border-bottom:1px solid #999"></div>
- <div class="signatures"><div>Dátum a podpis osoby, ktorá vykonala kontrolu</div><div>Dátum a podpis schvaľujúcej osoby</div></div>
- <div class="no-print actions"><button class="primary" onclick="window.print()">Tlačiť objednávku a kontrolný list</button><button class="secondary" onclick="showView('ordersSecretaryView')">Späť na zoznam</button></div></div>`;
- showView("orderPrintArea");
- document.body.classList.add("print-order");
+ const items=(o.items||[]).map((x,i)=>{const net=Number(x.priceNet??x.price??0),gross=Number(x.priceGross??(net*(1+(Number(x.rate)||0)/100)));return `<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td>${esc(x.qty)}</td><td>${net.toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td>${gross.toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td></tr>`}).join("");
+ document.getElementById("orderPrintArea").innerHTML=`<div class="order-paper"><div style="display:flex;justify-content:space-between;gap:20px"><div><b>Odberateľ:</b><br>Gemerské osvetové stredisko<br>Betliarska 8<br>048 01 Rožňava<br>IČO: 31297781<br>DIČ: 2021452400<br><br>Objednávku vystavil/a: ${esc(o.requester||"")}<br>Kontakt: 0915 778 740</div><div><h2>OBJEDNÁVKA č.: ${esc(o.number)}</h2><p>v ${esc(o.place)} dňa: ${esc(o.date)}</p><b>Dodávateľ:</b><br>${esc(o.supplier)}<br>${esc(o.address)}<br>IČO: ${esc(o.ico)}<br>DIČ: ${esc(o.dic)}<br>IČ DPH: ${esc(o.icdph)}</div></div><p><b>Predmet objednávky:</b><br>${esc(o.description)}</p><p><b>Cez koho / sprostredkovateľ:</b> ${esc(o.via||"—")}</p><table><thead><tr><th>Por. č.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH</th><th>Cena s DPH</th></tr></thead><tbody>${items}</tbody></table><h3 style="text-align:right">Celková cena s DPH: ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</h3><p>Dodacia lehota: ${esc(o.delivery)}<br>Spôsob dodávky: ${esc(o.method)}</p><div style="margin-top:45px;border-top:1px solid #777;padding-top:8px">Pečiatka a podpis objednávateľa</div><p class="small">Vytvorené v systéme VEĽKÁ VEVERICA · číslo ${esc(o.number)}</p><div class="no-print actions"><button class="primary" onclick="window.print()">Tlačiť objednávku</button><button class="secondary" onclick="showView('ordersSecretaryView')">Späť na zoznam</button></div></div>`;
+ showView("orderPrintArea");document.body.classList.add("print-order");
 }
 
 </script>
@@ -698,19 +678,20 @@ function editSupplier(i){
  window.scrollTo(0,0);
 }
 function resetSupplierForm(){editSupplierIndex=-1;document.getElementById("supplierForm").reset()}
-document.getElementById("supplierForm").addEventListener("submit",e=>{
+document.getElementById("supplierForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const v={name:document.getElementById("regName").value.trim(),address:document.getElementById("regAddress").value.trim(),ico:document.getElementById("regIco").value.trim(),dic:document.getElementById("regDic").value.trim(),icdph:document.getElementById("regVat").value.trim(),source:document.getElementById("regSource").value.trim()};
  if(!v.name)return;
  const duplicate=suppliers.findIndex((x,i)=>x.name.toLowerCase()===v.name.toLowerCase()&&i!==editSupplierIndex);
  if(duplicate>=0){alert("Dodávateľ s týmto názvom už v registri je. Otvor ho cez Upraviť.");return}
- if(editSupplierIndex>=0)suppliers[editSupplierIndex]=v;else suppliers.push(v);
- if(saveSuppliers()){resetSupplierForm();renderSuppliers();refreshSupplierOptions();alert("Dodávateľ bol uložený a bude dostupný pri ďalších objednávkach.")}
+ if(!loggedInStaff?.id){alert("Najprv sa prihláste.");return;}
+ const old=editSupplierIndex>=0?suppliers[editSupplierIndex]:null;
+ const payload={name:v.name,address:v.address,ico:v.ico,dic:v.dic,icdph:v.icdph,source:v.source,updated_at:new Date().toISOString()};
+ const result=old?await supabaseClient.from("gos_suppliers").update(payload).eq("id",old.id).select().single():await supabaseClient.from("gos_suppliers").insert({...payload,created_by:loggedInStaff.id}).select().single();
+ if(result.error){alert("Dodávateľa sa nepodarilo uložiť: "+result.error.message);return;}
+ await vvRefreshSharedSuppliers();resetSupplierForm();alert("Dodávateľ je uložený a viditeľný všetkým zamestnancom.")
 });
-function deleteSupplier(i){
- if(!confirm("Vymazať dodávateľa z registra? Už vytvorené objednávky zostanú zachované."))return;
- suppliers.splice(i,1);saveSuppliers();renderSuppliers();refreshSupplierOptions();
-}
+async function deleteSupplier(i){if(!confirm("Vymazať dodávateľa z registra? Už vytvorené objednávky zostanú zachované."))return;const v=suppliers[i];if(v.id){const {error}=await supabaseClient.from("gos_suppliers").delete().eq("id",v.id);if(error){alert(error.message);return;}}await vvRefreshSharedSuppliers();}
 function exportSuppliers(){
  const blob=new Blob([JSON.stringify(suppliers,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download="velka-veverica-register-dodavatelov.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -798,7 +779,7 @@ async function demoLogin(){
  };
  currentRole=profile.role;
  fillOrderRequester();
- try{await vvLoadSnapshot(profile.id);}catch(syncErr){errorEl.textContent="Prihlásenie prebehlo, ale cloud dáta sa nenačítali: "+(syncErr.message||syncErr);return;}
+ try{await vvLoadSnapshot(profile.id); await vvRefreshSharedOrders(); await vvRefreshSharedSuppliers();}catch(syncErr){errorEl.textContent="Prihlásenie prebehlo, ale cloud dáta sa nenačítali: "+(syncErr.message||syncErr);return;}
  document.getElementById("loginGate").style.display="none";
  document.getElementById("adminCreatePanel").classList.toggle("hidden",profile.role!=="admin");
  document.getElementById("roleLabel").textContent="Prihlásený: "+profile.full_name+" · "+profile.role;
@@ -872,6 +853,7 @@ initStaffLogin();
      try{await vvLoadSnapshot(profile.id);}catch(syncErr){console.error("Cloud snapshot load failed",syncErr);}
      const entry=gosStaffDirectory.find(x=>(x.email||"").toLowerCase()===profile.email.toLowerCase());
      loggedInStaff={...(entry||{}),id:profile.id,full:profile.full_name,email:profile.email,role:profile.role,access:profile.role};
+     await vvRefreshSharedOrders(); await vvRefreshSharedSuppliers();
      currentRole=profile.role;
      document.getElementById("loginGate").style.display="none";
      document.getElementById("adminCreatePanel").classList.toggle("hidden",profile.role!=="admin");
