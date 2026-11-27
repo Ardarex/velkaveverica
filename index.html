@@ -180,6 +180,14 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   body.print-order .no-print, body.print-order .actions { display: none !important; }
   body.print-order .order-paper tr { break-inside: avoid !important; page-break-inside: avoid !important; }
 }
+
+/* Čistá tlač všetkých tlačív: bez systémových hlavičiek, pätičiek a ovládacích prvkov. */
+@media print {
+  header, footer, .no-print, .actions, #cloudSyncStatus, #activeStaffLabel { display: none !important; }
+  body.print-order header, body.print-order footer { display: none !important; }
+  .order-paper .system-print-note, .order-paper .print-system-footer,
+  .printcopy .system-print-note, .printcopy .print-system-footer { display: none !important; }
+}
 </style>
 </head>
 <body>
