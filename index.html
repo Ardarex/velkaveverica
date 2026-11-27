@@ -84,6 +84,28 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   @page{size:A4 portrait;margin:12mm}
 }
 
+/* Optimalizácia tlače objednávky na jednu stranu A4 */
+@media print {
+  @page { size: A4 portrait; margin: 10mm; }
+  html, body { width: auto !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.print-order header, body.print-order footer { display: none !important; }
+  body.print-order main { display: block !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  body.print-order main > section:not(#orderPrintArea) { display: none !important; }
+  body.print-order #orderPrintArea { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  body.print-order .order-paper { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; color: #111 !important; font: 9pt/1.28 Arial, sans-serif !important; page-break-after: auto !important; break-after: auto !important; }
+  body.print-order .order-paper h2 { font-size: 15pt !important; margin: 0 0 5mm !important; }
+  body.print-order .order-paper p { margin: 3mm 0 !important; }
+  body.print-order .order-paper table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; margin: 4mm 0 !important; }
+  body.print-order .order-paper th, body.print-order .order-paper td { border: 0.25mm solid #555 !important; padding: 2mm 1.5mm !important; font-size: 8pt !important; color: #111 !important; overflow-wrap: anywhere !important; }
+  body.print-order .order-paper th { background: #f0f0f0 !important; }
+  body.print-order .order-paper > div:first-child { gap: 8mm !important; }
+  body.print-order .order-paper > div:first-child > div { width: 50% !important; min-width: 0 !important; }
+  body.print-order .order-paper > div[style*="margin-top"] { margin-top: 18mm !important; }
+  body.print-order .order-paper .small { font-size: 7pt !important; }
+  body.print-order .no-print, body.print-order .actions { display: none !important; }
+  body.print-order .order-paper, body.print-order .order-paper table, body.print-order .order-paper tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+}
+
 .data-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .inline-edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media(max-width:700px){.inline-edit{grid-template-columns:1fr}}
