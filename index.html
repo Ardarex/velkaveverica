@@ -223,7 +223,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
    <div class="field"><label>Adresa</label><input value="Betliarska 8, 048 01 Rožňava" readonly></div>
    <div class="field"><label>IČO</label><input value="31297781" readonly></div>
    <div class="field"><label>DIČ</label><input value="2021452400" readonly></div>
-   <div class="field"><label>Vybavuje</label><input value="M. Poláková" readonly></div>
+   <div class="field"><label>Objednávku vystavil/a</label><input id="orderRequester" readonly placeholder="Doplní sa podľa prihláseného zamestnanca"></div>
    <div class="field"><label>Kontakt</label><input value="0915 778 740" readonly></div>
   </div>
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
@@ -571,6 +571,8 @@ document.getElementById("supplier").addEventListener("change",e=>{
  ["supplierName","supplierAddress","supplierIco","supplierDic","supplierIcDph"].forEach(id=>document.getElementById(id).readOnly=e.target.value==="alza");
 });
 document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
+function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
+fillOrderRequester();
 function calcOrderTotal(){
  let total=0,rate=parseFloat(document.getElementById("vatRate").value)||0;
  document.querySelectorAll("#orderItems tr").forEach(tr=>{
@@ -591,12 +593,14 @@ document.getElementById("orderForm").addEventListener("submit",e=>{
  let existing=editingOrderId?orders.find(x=>x.id===editingOrderId):null;
  let manualNo=document.getElementById("orderNumberOverride").value.trim();
  let n=parseInt(localStorage.getItem("vv_order_seq")||"162",10)+1;
- let o={...(existing||{}),id:existing?.id||("O-"+Date.now()),number:manualNo||existing?.number||(new Date().getFullYear()+"/"+n),date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:document.getElementById("supplierName").value,address:document.getElementById("supplierAddress").value,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,description:document.getElementById("orderDescription").value,items,total:calcOrderTotal(),delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value,created:existing?.created||new Date().toLocaleString("sk-SK")};
+ let requester=loggedInStaff?.full||loggedInStaff?.short||"";let o={...(existing||{}),id:existing?.id||("O-"+Date.now()),requester,number:manualNo||existing?.number||(new Date().getFullYear()+"/"+n),date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:document.getElementById("supplierName").value,address:document.getElementById("supplierAddress").value,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,description:document.getElementById("orderDescription").value,items,total:calcOrderTotal(),delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value,created:existing?.created||new Date().toLocaleString("sk-SK")};
  if(!existing&&!manualNo)localStorage.setItem("vv_order_seq",String(n));
  if(existing){orders[orders.findIndex(x=>x.id===existing.id)]=o;}else orders.unshift(o);
  localStorage.setItem("vv_orders",JSON.stringify(orders));editingOrderId=null;
  alert("Objednávka "+o.number+" bola "+(existing?"upravená":"uložená")+".");
- form.reset();document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);document.getElementById("orderNumberOverride").value="";showOrderPrint(o);
+ form.reset();document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
+function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
+fillOrderRequester();document.getElementById("orderNumberOverride").value="";showOrderPrint(o);
 });
 
 function renderOrders(){
@@ -607,7 +611,7 @@ function renderOrders(){
 function editOrder(i){
  const o=orders[i];editingOrderId=o.id;showView("orderView");
  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};
- set("supplier","custom");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);
+ set("orderRequester",o.requester||loggedInStaff?.full||"");set("supplier","custom");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);
  set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("orderNumberOverride",o.number);
  set("vatRate",o.items?.[0]?.rate??23);
  const body=document.getElementById("orderItems");body.innerHTML="";
@@ -629,7 +633,7 @@ function importAllData(event){
 
 function showOrderPrint(o){
  const items=o.items.map((x,i)=>`<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td>${esc(x.qty)}</td><td>${Number(x.price||0).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td>${(Number(x.qty||0)*Number(x.price||0)*(1+(Number(x.rate)||0)/100)).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td></tr>`).join("");
- document.getElementById("orderPrintArea").innerHTML=`<div class="order-paper"><div style="display:flex;justify-content:space-between;gap:20px"><div><b>Odberateľ:</b><br>Gemerské osvetové stredisko<br>Betliarska 8<br>048 01 Rožňava<br>IČO: 31297781<br>DIČ: 2021452400<br><br>Vybavuje: M. Poláková<br>Kontakt: 0915 778 740</div><div><h2>OBJEDNÁVKA č.: ${esc(o.number)}</h2><p>v ${esc(o.place)} dňa: ${esc(o.date)}</p><b>Dodávateľ:</b><br>${esc(o.supplier)}<br>${esc(o.address)}<br>IČO: ${esc(o.ico)}<br>DIČ: ${esc(o.dic)}<br>IČ DPH: ${esc(o.icdph)}</div></div><p><b>Predmet objednávky:</b><br>${esc(o.description)}</p><table><thead><tr><th>Por. č.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH</th><th>Cena s DPH</th></tr></thead><tbody>${items||'<tr><td>1.</td><td colspan="4">Položky budú doplnené podľa opisu objednávky.</td></tr>'}</tbody></table><h3 style="text-align:right">Celková cena s DPH: ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</h3><p>Dodacia lehota: ${esc(o.delivery)}<br>Spôsob dodávky: ${esc(o.method)}</p><div style="margin-top:45px;border-top:1px solid #777;padding-top:8px">Pečiatka a podpis objednávateľa</div><p class="small">Vytvorené v systéme VEĽKÁ VEVERICA · číslo ${esc(o.number)}</p></div>
+ document.getElementById("orderPrintArea").innerHTML=`<div class="order-paper"><div style="display:flex;justify-content:space-between;gap:20px"><div><b>Odberateľ:</b><br>Gemerské osvetové stredisko<br>Betliarska 8<br>048 01 Rožňava<br>IČO: 31297781<br>DIČ: 2021452400<br><br>Objednávku vystavil/a: ${esc(o.requester||"")}<br>Kontakt: 0915 778 740</div><div><h2>OBJEDNÁVKA č.: ${esc(o.number)}</h2><p>v ${esc(o.place)} dňa: ${esc(o.date)}</p><b>Dodávateľ:</b><br>${esc(o.supplier)}<br>${esc(o.address)}<br>IČO: ${esc(o.ico)}<br>DIČ: ${esc(o.dic)}<br>IČ DPH: ${esc(o.icdph)}</div></div><p><b>Predmet objednávky:</b><br>${esc(o.description)}</p><table><thead><tr><th>Por. č.</th><th>Predmet objednávky</th><th>Množstvo</th><th>Jedn. cena bez DPH</th><th>Cena s DPH</th></tr></thead><tbody>${items||'<tr><td>1.</td><td colspan="4">Položky budú doplnené podľa opisu objednávky.</td></tr>'}</tbody></table><h3 style="text-align:right">Celková cena s DPH: ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</h3><p>Dodacia lehota: ${esc(o.delivery)}<br>Spôsob dodávky: ${esc(o.method)}</p><div style="margin-top:45px;border-top:1px solid #777;padding-top:8px">Pečiatka a podpis objednávateľa</div><p class="small">Vytvorené v systéme VEĽKÁ VEVERICA · číslo ${esc(o.number)}</p></div>
  <div class="control-paper"><h2>KONTROLNÝ LIST K OBJEDNÁVKE</h2><p class="control-sub">Gemerské osvetové stredisko · interná kontrola pred spracovaním objednávky</p>
  <div class="control-meta"><div><b>Číslo objednávky:</b> ${esc(o.number)}</div><div><b>Dátum:</b> ${esc(o.date)}</div><div><b>Dodávateľ:</b> ${esc(o.supplier)}</div><div><b>IČO:</b> ${esc(o.ico)||" "}</div><div style="grid-column:1/-1"><b>Predmet:</b> ${esc(o.description)}</div><div><b>Celková cena s DPH:</b> ${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</div><div><b>Kontrolu vykonal/a:</b> </div></div>
  <table><thead><tr><th style="width:9%">Splnené</th><th>Kontrolná položka</th><th style="width:25%">Poznámka</th></tr></thead><tbody>
@@ -793,6 +797,7 @@ async function demoLogin(){
    access:profile.role==="admin"?"admin":profile.role==="director"?"director":profile.role
  };
  currentRole=profile.role;
+ fillOrderRequester();
  try{await vvLoadSnapshot(profile.id);}catch(syncErr){errorEl.textContent="Prihlásenie prebehlo, ale cloud dáta sa nenačítali: "+(syncErr.message||syncErr);return;}
  document.getElementById("loginGate").style.display="none";
  document.getElementById("adminCreatePanel").classList.toggle("hidden",profile.role!=="admin");
