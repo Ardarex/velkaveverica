@@ -227,7 +227,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
   <h2>Dodávateľ</h2>
   <div class="formgrid">
-   <div class="field"><label for="supplier">Vyberte dodávateľa *</label><select id="supplier" required><option value="">Vyberte dodávateľa</option><option value="manual">Dodávateľa vyplniť podľa cenovej ponuky alebo fakturačných údajov</option><option value="custom">Iný dodávateľ – vyplniť ručne</option></select><div class="supplier-note">Vyber uloženého dodávateľa alebo pridaj nového do registra.</div><button class="secondary" type="button" onclick="showView('suppliersView')">+ Pridať / upraviť dodávateľa v registri</button></div>
+   <div class="field"><label for="supplier">Vyberte dodávateľa *</label><select id="supplier"><option value="">Vyberte dodávateľa</option><option value="manual">Dodávateľa vyplniť podľa cenovej ponuky alebo fakturačných údajov</option><option value="custom">Iný dodávateľ – vyplniť ručne</option></select><div class="supplier-note">Vyber uloženého dodávateľa alebo pridaj nového do registra.</div><button class="secondary" type="button" onclick="showView('suppliersView')">+ Pridať / upraviť dodávateľa v registri</button></div>
    <div class="field"><label for="supplierName">Obchodné meno *</label><input id="supplierName" required></div>
    <div class="field"><label for="supplierAddress">Sídlo / adresa *</label><input id="supplierAddress" required></div>
    <div class="field"><label for="supplierIco">IČO</label><input id="supplierIco"></div>
@@ -572,19 +572,23 @@ document.getElementById("supplier").addEventListener("change",e=>{
 document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);
 function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
 fillOrderRequester();
-function fmtMoney(n){return (Number(n)||0).toFixed(2)}
+function fmtMoney(n){return (Math.round((Number(n)||0)*100)/100).toFixed(2)}
 function calcOrderTotal(changedInput){
  const rate=(Number(document.getElementById("vatRate").value)||0)/100;let total=0;
  document.querySelectorAll("#orderItems tr").forEach(tr=>{
-  const netEl=tr.querySelector(".item-net"),grossEl=tr.querySelector(".item-gross"),qty=Number(tr.querySelector(".item-qty").value)||0;
-  let net=Number(netEl.value)||0,gross=Number(grossEl.value)||0;
-  if(changedInput===netEl){gross=net*(1+rate);grossEl.value=netEl.value===""?"":fmtMoney(gross)}
-  else if(changedInput===grossEl){net=rate===-1?0:gross/(1+rate);netEl.value=grossEl.value===""?"":fmtMoney(net)}
-  else if(netEl.value!==""){gross=net*(1+rate);grossEl.value=fmtMoney(gross)}
-  else if(grossEl.value!==""){net=gross/(1+rate);netEl.value=fmtMoney(net)}
-  total+=qty*gross;
+  const netEl=tr.querySelector(".item-net"),grossEl=tr.querySelector(".item-gross"),qtyEl=tr.querySelector(".item-qty");
+  if(!netEl||!grossEl||!qtyEl)return;
+  const qty=Math.max(0,Number(qtyEl.value)||0);
+  let net=netEl.value===""?null:Number(netEl.value),gross=grossEl.value===""?null:Number(grossEl.value);
+  if(changedInput===netEl && net!==null){gross=net*(1+rate);grossEl.value=fmtMoney(gross)}
+  else if(changedInput===grossEl && gross!==null){net=gross/(1+rate);netEl.value=fmtMoney(net)}
+  else if(net!==null){gross=net*(1+rate);grossEl.value=fmtMoney(gross)}
+  else if(gross!==null){net=gross/(1+rate);netEl.value=fmtMoney(net)}
+  if(gross!==null)total+=qty*gross;
  });
- document.getElementById("orderTotal").textContent=total.toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";return total;
+ total=Math.round(total*100)/100;
+ document.getElementById("orderTotal").textContent=total.toLocaleString("sk-SK",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+ return total;
 }
 document.getElementById("orderItems").addEventListener("input",e=>{if(e.target.matches(".item-net,.item-gross"))calcOrderTotal(e.target);else calcOrderTotal()});
 document.getElementById("orderItems").addEventListener("change",e=>{if(e.target.matches(".item-net,.item-gross"))calcOrderTotal(e.target)});
@@ -615,20 +619,49 @@ async function vvRefreshSharedSuppliers(){
  localStorage.setItem("vv_suppliers",JSON.stringify(suppliers));refreshSupplierOptions();renderSuppliers();
 }
 document.getElementById("orderForm").addEventListener("submit",async e=>{
- e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;
- if(!loggedInStaff?.id){alert("Najprv sa prihláste.");return;}
+ e.preventDefault();const form=e.currentTarget;
+ if(!form.reportValidity())return;
+ if(!loggedInStaff?.id){alert("Najprv sa prihláste do portálu.");return;}
+ const supplierName=document.getElementById("supplierName").value.trim();
+ const supplierAddress=document.getElementById("supplierAddress").value.trim();
+ if(!supplierName||!supplierAddress){alert("Vyplňte obchodné meno a adresu dodávateľa.");return;}
  const rate=Number(document.getElementById("vatRate").value)||0;
- const items=[...document.querySelectorAll("#orderItems tr")].map(tr=>{const qty=Number(tr.querySelector(".item-qty").value)||0,net=Number(tr.querySelector(".item-net").value)||0,gross=Number(tr.querySelector(".item-gross").value)||net*(1+rate/100);return {name:tr.querySelector(".item-name").value.trim(),qty,priceNet:net,priceGross:gross,price:net,rate};}).filter(x=>x.name);
+ const items=[...document.querySelectorAll("#orderItems tr")].map(tr=>{
+  const name=tr.querySelector(".item-name").value.trim();
+  const qty=Number(tr.querySelector(".item-qty").value)||0;
+  const net=Number(tr.querySelector(".item-net").value)||0;
+  const gross=Number(tr.querySelector(".item-gross").value)||net*(1+rate/100);
+  return {name,qty,priceNet:net,priceGross:gross,price:net,rate};
+ }).filter(x=>x.name&&x.qty>0);
+ if(!items.length){alert("Pridajte aspoň jednu položku, zadajte jej názov a množstvo.");return;}
+ const total=Math.round(items.reduce((sum,x)=>sum+x.qty*x.priceGross,0)*100)/100;
  const existing=editingOrderId?orders.find(x=>x.id===editingOrderId):null;
- const o={requester:existing?.requester||loggedInStaff.full||loggedInStaff.short||"",date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:document.getElementById("supplierName").value,address:document.getElementById("supplierAddress").value,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,via:document.getElementById("orderVia").value,description:document.getElementById("orderDescription").value,items,total:calcOrderTotal(),delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value};
- let saved;
- if(existing?._db){const {data,error}=await supabaseClient.from("gos_orders").update({data:o,updated_at:new Date().toISOString()}).eq("id",existing.id).select().single();if(error){alert("Uloženie zlyhalo: "+error.message);return;}saved={...o,id:data.id,number:data.order_number,created_by_name:data.created_by_name,_db:true};}
- else if(existing){const {data,error}=await supabaseClient.from("gos_orders").update({data:o,updated_at:new Date().toISOString()}).eq("id",existing.id).select().maybeSingle();if(error){alert("Uloženie zlyhalo: "+error.message);return;}saved={...o,id:existing.id,number:existing.number,_db:true};}
- else {const {data,error}=await supabaseClient.rpc("gos_create_order",{p_data:o});if(error){alert("Objednávku sa nepodarilo uložiť: "+error.message);return;}const result=Array.isArray(data)?data[0]:data;saved={...o,id:result.id,number:result.order_number,_db:true};}
- editingOrderId=null;await vvRefreshSharedOrders();form.reset();document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);fillOrderRequester();showOrderPrint(saved);
+ const o={requester:existing?.requester||loggedInStaff.full||loggedInStaff.short||"",date:document.getElementById("orderDate").value,place:document.getElementById("orderPlace").value,supplier:supplierName,address:supplierAddress,ico:document.getElementById("supplierIco").value,dic:document.getElementById("supplierDic").value,icdph:document.getElementById("supplierIcDph").value,via:document.getElementById("orderVia").value,description:document.getElementById("orderDescription").value,items,total,delivery:document.getElementById("delivery").value,method:document.getElementById("deliveryMethod").value};
+ const submitButton=form.querySelector('button[type="submit"]');submitButton.disabled=true;submitButton.textContent="Ukladám…";
+ try{
+  let saved;
+  if(existing?._db){
+   const {data,error}=await supabaseClient.from("gos_orders").update({data:o,updated_at:new Date().toISOString()}).eq("id",existing.id).select().single();
+   if(error)throw error;saved={...o,id:data.id,number:data.order_number||existing.number,_db:true};
+  }else if(existing){
+   const {data,error}=await supabaseClient.from("gos_orders").update({data:o,updated_at:new Date().toISOString()}).eq("id",existing.id).select().maybeSingle();
+   if(error)throw error;saved={...o,id:existing.id,number:existing.number,_db:true};
+  }else{
+   const {data,error}=await supabaseClient.rpc("gos_create_order",{p_data:o});
+   if(error)throw error;const result=Array.isArray(data)?data[0]:data;
+   if(!result?.id||!result?.order_number)throw new Error("Databáza nevrátila číslo objednávky. Skontrolujte funkciu gos_create_order.");
+   saved={...o,id:result.id,number:result.order_number,_db:true};
+  }
+  editingOrderId=null;
+  await vvRefreshSharedOrders();
+  form.reset();document.getElementById("orderDate").value=new Date().toISOString().slice(0,10);fillOrderRequester();calcOrderTotal();
+  showOrderPrint(saved);
+ }catch(error){console.error("Uloženie objednávky:",error);alert("Objednávku sa nepodarilo uložiť: "+(error.message||String(error)));}
+ finally{submitButton.disabled=false;submitButton.textContent=editingOrderId?"Uložiť zmeny objednávky":"Uložiť objednávku a prideliť číslo";}
 });
 function fillOrderRequester(){const el=document.getElementById("orderRequester");if(el)el.value=loggedInStaff?.full||loggedInStaff?.short||"";}
 fillOrderRequester();
+calcOrderTotal();
 
 function renderOrders(){let el=document.getElementById("ordersList");if(!orders.length){el.innerHTML='<div class="empty">Zatiaľ nie sú vytvorené objednávky.</div>';return;}el.innerHTML='<table><thead><tr><th>Číslo</th><th>Dátum</th><th>Vystavil/a</th><th>Dodávateľ</th><th>Cena s DPH</th><th>Akcie</th></tr></thead><tbody>'+orders.map((o,i)=>`<tr><td>${esc(o.number)}</td><td>${esc(o.date)}</td><td>${esc(o.requester||"")}</td><td>${esc(o.supplier)}</td><td>${Number(o.total).toLocaleString("sk-SK",{minimumFractionDigits:2})} €</td><td><button class="secondary" onclick="showOrderPrint(orders[${i}])">Tlačiť</button> <button class="secondary" onclick="editOrder(${i})">Upraviť</button> <button class="danger" onclick="deleteOrder(${i})">Vymazať</button></td></tr>`).join("")+'</tbody></table>';}
 function editOrder(i){const o=orders[i];editingOrderId=o.id;showView("orderView");const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??""};set("orderRequester",o.requester);set("supplier","manual");set("supplierName",o.supplier);set("supplierAddress",o.address);set("supplierIco",o.ico);set("supplierDic",o.dic);set("supplierIcDph",o.icdph);set("orderVia",o.via);set("orderDescription",o.description);set("delivery",o.delivery);set("deliveryMethod",o.method);set("orderPlace",o.place);set("orderDate",o.date);set("vatRate",o.items?.[0]?.rate??23);set("priceMode","net");const body=document.getElementById("orderItems");body.innerHTML="";(o.items?.length?o.items:[{name:"",qty:1,price:0,rate:23}]).forEach((x,i)=>{let tr=document.createElement("tr");tr.innerHTML=`<td>${i+1}.</td><td><input class="item-name"></td><td><input class="item-qty" type="number" min="0" step="0.01"></td><td><input class="item-net" type="number" min="0" step="0.01"></td><td><input class="item-gross" type="number" min="0" step="0.01"></td>`;tr.querySelector(".item-name").value=x.name||"";tr.querySelector(".item-qty").value=x.qty||1;tr.querySelector(".item-net").value=x.priceNet??x.price??0;tr.querySelector(".item-gross").value=x.priceGross??(Number(x.priceNet??x.price??0)*(1+(Number(x.rate)||0)/100));body.appendChild(tr)});calcOrderTotal();document.querySelector("#orderForm button[type=submit]").textContent="Uložiť zmeny objednávky";}
