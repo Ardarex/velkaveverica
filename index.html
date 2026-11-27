@@ -208,7 +208,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 30px;color:var(--muted);
    <div class="field full"><label for="requesterSign">Meno žiadateľa na podpis</label><input id="requesterSign" placeholder="Meno a priezvisko"></div>
   </div>
   <div class="actions"><button class="primary" type="submit">Uložiť žiadanku</button><button class="secondary" type="reset">Vymazať</button></div>
-  <p class="small">Po uložení sa žiadanka zobrazí v evidencii sekretariátu na tomto zariadení a v tomto prehliadači.</p>
+  <p class="small">Po uložení sa žiadanka automaticky otvorí na tlač. Schválenie sekretariátom nie je potrebné.</p>
  </form>
 </section>
 
@@ -469,18 +469,19 @@ document.getElementById("requestForm").addEventListener("submit",e=>{
   requests[idx]=data;
  }else{
   data.id="Ž-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
-  data.status="Čaká na schválenie";data.created=new Date().toLocaleString("sk-SK");data.approver="";
+  data.status="Vytvorená";data.created=new Date().toLocaleString("sk-SK");data.approver="";
   requests.unshift(data);
  }
  if(!save())return;
+ const wasEditing=!!editingRequestId;
  editingRequestId=null;
  form.reset();
  document.getElementById("ecv").value="";
  document.getElementById("orderNo").value="";
  document.getElementById("duration").value="";
- alert("Žiadanka "+data.id+" bola "+(data.status==="Čaká na schválenie"?"uložená":"upravená")+".");
+ alert("Žiadanka "+data.id+" bola "+(wasEditing?"upravená":"vytvorená")+". Teraz sa otvorí tlač.");
  sessionStorage.setItem("vv_auto_travel_draft",JSON.stringify({car:data.car,from:data.from,to:data.to,purpose:data.purpose,date:data.date,time:data.time}));
- if(confirm("Otvoriť teraz cestovný príkaz s prenesenými údajmi z autožiadanky?"))openTravelOrder();else showView("homeView");
+ printRequest(data);
 });
 function renderRequests(){
  document.getElementById("pendingCount").textContent=requests.filter(r=>r.status==="Čaká na schválenie").length;
@@ -489,7 +490,7 @@ function renderRequests(){
  let el=document.getElementById("requestList");
  if(!requests.length){el.innerHTML='<div class="empty">Zatiaľ nebola uložená žiadna žiadanka.</div>';return}
  el.innerHTML='<table><thead><tr><th>Číslo</th><th>Žiadateľ</th><th>Auto / EČV</th><th>Termín</th><th>Stav</th><th>Akcie</th></tr></thead><tbody>'+
- requests.map((r,i)=>`<tr><td>${esc(r.id)}</td><td>${esc(r.requester)}</td><td>${esc(r.car)}<br>${esc(r.ecv)}</td><td>${esc(r.date)} ${esc(r.time)}</td><td><span class="badge ${r.status==="Schválená"?"":"wait"}">${esc(r.status)}</span></td><td><button class="secondary" onclick="detail(${i})">Detail</button> <button class="secondary" onclick="editRequest(${i})">Upraviť</button> <button class="danger" onclick="deleteRequest(${i})">Vymazať</button> ${r.status==="Čaká na schválenie"?`<button class="primary" onclick="approve(${i})">Schváliť a tlačiť</button> <button class="danger" onclick="reject(${i})">Zamietnuť</button>`:`<button class="secondary" onclick="printRequest(requests[${i}])">Tlačiť</button>`}</td></tr>`).join("")+'</tbody></table><div id="requestDetail" style="margin-top:14px"></div>';
+ requests.map((r,i)=>`<tr><td>${esc(r.id)}</td><td>${esc(r.requester)}</td><td>${esc(r.car)}<br>${esc(r.ecv)}</td><td>${esc(r.date)} ${esc(r.time)}</td><td><span class="badge ${r.status==="Schválená"?"":"wait"}">${esc(r.status)}</span></td><td><button class="secondary" onclick="detail(${i})">Detail</button> <button class="secondary" onclick="editRequest(${i})">Upraviť</button> <button class="danger" onclick="deleteRequest(${i})">Vymazať</button> <button class="secondary" onclick="printRequest(requests[${i}])">Tlačiť</button></td></tr>`).join("")+'</tbody></table><div id="requestDetail" style="margin-top:14px"></div>';
 }
 function detail(i){
  let r=requests[i],el=document.getElementById("requestDetail");
