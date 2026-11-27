@@ -809,11 +809,12 @@ async function createEmployeeAccounts(){
  if(!confirm("Vytvoriť prihlasovacie účty pre zamestnancov, ktorí ich ešte nemajú?"))return;
  btn.disabled=true;status.textContent="Vytváram účty…";out.innerHTML="";
  try{
-  const {data,error}=await supabaseClient.functions.invoke("create-employees",{body:{}});
+  const {data,error}=await supabaseClient.functions.invoke("CREATE_EMLOYE",{body:{}});
   if(error)throw error;
   if(!data || data.error)throw new Error(data?.error||"Funkcia nevrátila platnú odpoveď.");
-  const created=Array.isArray(data.created)?data.created:(Array.isArray(data.credentials)?data.credentials:[]);
-  const existing=Array.isArray(data.existing)?data.existing:[];
+  const allResults=Array.isArray(data.results)?data.results:[];
+  const created=allResults.filter(x=>x.status==="vytvorený nový účet").map(x=>({full_name:x.full_name,email:x.email,password:x.temporary_password}));
+  const existing=allResults.filter(x=>x.status!=="vytvorený nový účet");
   status.textContent=`Hotovo. Nové účty: ${created.length}. Už existujúce: ${existing.length}.`;
   if(created.length){
    const rows=created.map(x=>`<tr><td>${esc(x.full_name||x.name||"")}</td><td>${esc(x.email||"")}</td><td><code>${esc(x.password||x.temporary_password||"")}</code></td></tr>`).join("");
